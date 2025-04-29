@@ -1,0 +1,36 @@
+[logging]
+; level = INFO
+
+[media]
+; path = ./media
+
+[socketio]
+; path = /ws
+
+[scheduler]
+; min_job_response_time = 300; 60 * 5
+; host = 0.0.0.0
+; port = 8201
+; max_daemon_jobs = 10
+
+[acoustid]
+; enabled = false
+; api_key = xxxxxxxxx
+
+[gpt]
+; enabled = false
+; endpoint = http://localhost:8080/api/chat/completions
+; token = xxxxxxxxx
+
+[transcription]
+; cpu_model = large-v3-turbo
+; gpu_model = medium
+; initial_prompt = 
+
+[export]
+; font = Arial
+
+[mfa]
+; base = ./model
+; zh.acoustic = https://github.com/MontrealCorpusTools/mfa-models/releases/download/acoustic-mandarin_mfa-v3.0.0/mandarin_mfa.zip
+; zh.dictionary = https://github.com/MontrealCorpusTools/mfa-models/releases/download/dictionary-mandarin_taiwan_mfa-v3.0.0/mandarin_taiwan_mfa.dict
