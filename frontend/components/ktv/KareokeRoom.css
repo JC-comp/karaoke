@@ -1,0 +1,121 @@
+.kareoke-room {
+    --karaoke-room-width: 40vw;
+    --karaoke-card-padding: 10px;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    padding-right: var(--container-padding);
+    max-width: var(--karaoke-room-width);
+    max-height: 90vh;
+    flex-shrink: 0;
+}
+
+@media (min-width: 576px) {
+    .kareoke-room-container {
+        --karaoke-room-width: 40vw;
+        --karaoke-card-padding: 10px;
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 0;
+        padding-right: var(--container-padding);
+        max-width: var(--karaoke-room-width);
+        max-height: 90vh;
+        flex-shrink: 0;
+    }
+}
+
+.kareoke-room>* {
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.kareoke-room>*:last-child {
+    flex-shrink: 1;
+}
+
+.room-header {
+    text-align: center;
+}
+
+.room-actions {
+    display: flex;
+    justify-content: space-evenly;
+    width: 100%;
+}
+
+.playlist-container {
+    overflow: auto;
+}
+
+.playlist-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.playlist-item .controls {
+    align-self: flex-end;
+}
+
+.controls>*:first-child {
+    margin-left: 0;
+}
+
+.controls>* {
+    margin-left: 5px;
+}
+
+.controls button>*:not(:first-child) {
+    padding-left: 5px;
+}
+
+.kareoke-room-container {
+    --fab-size: 50px;
+    --fab-padding: 10px;
+}
+
+.fab {
+    display: none;
+    position: fixed;
+    bottom: var(--fab-padding);
+    right: var(--fab-padding);
+    height: var(--fab-size);
+    width: var(--fab-size);
+    z-index: 1;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.5s;
+}
+
+.fab.open {
+    transform: rotateY(360deg);
+}
+
+@media (max-width: 576px) {
+    .kareoke-room {
+        position: fixed;
+        padding: 0;
+        background-color: var(--bs-body-bg);
+        z-index: 1;
+        align-self: end;
+        right: calc(var(--fab-padding) + var(--fab-size));
+        bottom: calc(var(--fab-padding) + var(--fab-size));
+        border-radius: var(--bs-border-radius);
+        border: 1px solid var(--bs-border-color);
+        overflow: hidden;
+        max-height: 0%;
+        max-width: 0%;
+        transition: max-height 0.5s ease-in-out, max-width 0.5s ease-in-out;
+    }
+
+    .kareoke-room.open {
+        max-height: calc(100vh - var(--fab-padding) - var(--fab-size));
+        max-width: calc(100vw - var(--fab-padding) * 4 - var(--fab-size));
+    }
+
+    .fab {
+        display: flex;
+    }
+}
