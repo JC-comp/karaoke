@@ -1,0 +1,21 @@
+@import 'react-toastify/dist/ReactToastify.css';
+
+.root {
+    --container-padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--container-padding);
+    min-height: 100vh;
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+}
+
+.theme-toggle:not(.showing) {
+    opacity: 0;
+}

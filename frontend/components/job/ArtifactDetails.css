@@ -1,0 +1,46 @@
+.log-details {
+  user-select: none;
+}
+
+.artifact-table {
+  vertical-align: middle;
+  table-layout: fixed;
+}
+
+.artifact-table td[scope=row] {
+  vertical-align: top;
+}
+
+.log-details[open] > summary{
+  background-color: var(--bs-tertiary-bg);
+}
+
+.log-details[open]>summary:before {
+  content: '📂';
+  transform: rotateY(360deg);
+}
+
+.log-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.log-details summary {
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  padding-left: 2rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  transition: background-color 100ms linear;
+}
+
+.log-details summary:before {
+  content: '📁';
+  position: absolute;
+  top: 0.4rem;
+  left: 0.3rem;
+  transform: rotate(0);
+  transform-origin: 50% 50%;
+  transition: .25s transform ease;
+}

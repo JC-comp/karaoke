@@ -1,0 +1,50 @@
+.progress-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.progress-row > * {
+    padding: 0 0.5rem;
+}
+
+.log-line:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.log-line * {
+    margin-right: 8px;
+}
+
+.log-line span {
+    padding: 1.25px 0;
+    word-break: break-word;
+}
+
+.log-line-number {
+    padding-right: 8px;
+    min-width: 50px;
+    user-select: none;
+    text-align: right;
+}
+
+.log-body {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.status-text {
+    width: 6rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.region-content {
+    white-space: nowrap;
+}
+
+@media (min-width:768px) {
+    .progress-row {
+        flex-direction: row;
+        overflow: hidden;
+    }   
+}

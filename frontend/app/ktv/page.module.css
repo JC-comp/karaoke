@@ -1,0 +1,42 @@
+.ktv-room {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.ktv-room > * {
+    display: inline-block;
+    height: 100%;
+    vertical-align: top;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    transition: width 0.3s ease-in-out;
+}
+
+.video-container.open {
+    height: 100%;
+    width: 80%;
+}
+
+.video-container > *, .video-container iframe {
+    width: 100%;
+    height: 100%;
+}
+
+.toggle-playlist-icon {
+    position: absolute;
+    top: 25%;
+    right: 0;
+    width: 1.5rem;
+    height: 4rem;
+    padding: 0;
+    border-radius: 1rem 0 0 1rem;
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+}
+
+.room-info {
+    width: 20%;
+}
