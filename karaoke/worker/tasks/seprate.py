@@ -1,0 +1,95 @@
+import os
+
+from .task import Task, Execution, ArtifactType
+from ..job import RemoteJob
+
+class SeperateAudioExecution(Execution):
+    def __init__(self, name, config, model_name, passing_key):
+        super().__init__(name, config)
+        self.model_name = model_name
+        self.passing_key = passing_key
+
+    def _set_result(self, audio_path: str) -> None:
+        """
+        Set the result of the separation task.
+        """
+        self.passing_args[self.passing_key + '_only'] = audio_path
+        self.add_artifact(f'Separated {self.passing_key}', ArtifactType.AUDIO, audio_path)
+
+    def _external_long_running_task(self, args) -> None:
+        """
+        Separate the audio into primary and secondary stems according to the model used.
+        Run in a separate process so that we can capture the output and error streams.
+        See https://github.com/nomadkaraoke/python-audio-separator for more details.
+        """
+        self.logger.info("Lazy loading audio-separator")
+        audio_path, output_dir = args
+        
+        audio_file_base = os.path.splitext(os.path.basename(audio_path))[0]
+        output_format = "mp3"
+        primary_stem_name = os.path.join(output_dir, f"{audio_file_base}_{self.passing_key}")
+        primary_stem_path = primary_stem_name + '.' + output_format
+        custom_output_names = {
+            self.passing_key: primary_stem_name,
+        }
+        # Check if the output targets are already cached
+        if os.path.exists(primary_stem_path):
+            self.update(message='Found separated audio in cache')
+            self._set_result(primary_stem_path)
+            return
+
+        self.update(message='Loading model')
+        from audio_separator.separator import Separator
+        separator = Separator(
+            model_file_dir='model',
+            output_dir=output_dir,
+            output_format=output_format,
+            output_single_stem=self.passing_key
+        )
+        separator.load_model(model_filename=self.model_name)
+        # Run the separation 
+        primary_stem_path, = separator.separate(audio_path, custom_output_names=custom_output_names)
+        self._set_result(primary_stem_path)
+        self.update(message='Separation completed')
+    
+    def _start(self, args):
+        self.update(message='Seperate audio from video')
+        audio_path = args['source_audio']
+        output_dir = os.path.dirname(os.path.abspath(audio_path))
+        self._start_external_long_running_task((audio_path, output_dir))
+
+class SeperateAudio(Task):
+    def __init__(
+        self, name: str, job: RemoteJob, 
+        passing_key: str, model_name: str
+    ):
+        super().__init__(
+            name=name, job=job, 
+            execution_class=SeperateAudioExecution,
+            execution_kargs={
+                'model_name': model_name,
+                'passing_key': passing_key,
+            }
+        )
+
+class SeperateVocal(SeperateAudio):
+    def __init__(
+        self, job: RemoteJob
+    ):
+        super().__init__(
+            name='Vocal Separation', job=job, 
+            passing_key='Vocals',
+            model_name= 'Kim_Vocal_2.onnx',
+        )
+
+class SeperateInstrument(SeperateAudio):
+    def __init__(
+        self, job: RemoteJob
+    ):
+        super().__init__(
+            name='Instrument Separation', job=job, 
+            passing_key='Instrumental',
+            model_name= 'UVR_MDXNET_KARA_2.onnx'
+        )
+    
+    

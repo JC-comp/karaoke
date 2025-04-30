@@ -1,0 +1,9 @@
+yt-dlp[default]
+pyacoustid
+auditok
+musicxmatch_api
+onnxruntime
+jieba
+montreal-forced-aligner
+kalpy-kaldi # pybind11[global], kaldi build
+pgvector
