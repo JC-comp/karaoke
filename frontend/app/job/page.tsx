@@ -33,7 +33,7 @@ function usePrevious(value: JobInfo | null) {
 
 function parseLogLines(log: string) {
   const lines = log.split('\n');
-  const re = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (\d+) - (.+) - (.+) - (.*)$/s;
+  const re = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (\d+) - ([^ ]+) - ([^ ]+) - (.*)$/s;
 
   const parsedLines = lines.reduce((filtered, line) => {
     const match = line.match(re);
