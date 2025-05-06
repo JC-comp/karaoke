@@ -156,6 +156,7 @@ const QueueScheduleButton = ({ roomID, searchResult }: { roomID: string | null, 
       })
       .catch((err) => {
         toast.error(`An error occurred while queuing the video. (${err.message})`);
+        setIsProcessing(false);
       });
 
   }, [isProcessing]);
