@@ -29,7 +29,7 @@ class SyncTask(ExecuteTask):
     def update(self, **kwargs) -> None:
         self.push('update', **kwargs)
     
-    def push_passing_args(self, args: dict) -> None:
+    def set_passing_args(self, args: dict) -> None:
         self.push('passing_args', args=args)
 
     def passive_update(self, **kwargs) -> None:

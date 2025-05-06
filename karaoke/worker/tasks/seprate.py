@@ -27,8 +27,8 @@ class SeperateAudioExecution(Execution):
         
         audio_file_base = os.path.splitext(os.path.basename(audio_path))[0]
         output_format = "mp3"
-        primary_stem_name = os.path.join(output_dir, f"{audio_file_base}_{self.passing_key}")
-        primary_stem_path = primary_stem_name + '.' + output_format
+        primary_stem_name = f"{audio_file_base}_{self.passing_key}"
+        primary_stem_path = os.path.join(output_dir, primary_stem_name + '.' + output_format)
         custom_output_names = {
             self.passing_key: primary_stem_name,
         }
@@ -48,8 +48,8 @@ class SeperateAudioExecution(Execution):
         )
         separator.load_model(model_filename=self.model_name)
         # Run the separation 
-        primary_stem_path, = separator.separate(audio_path, custom_output_names=custom_output_names)
-        self._set_result(primary_stem_path)
+        primary_stem_name, = separator.separate(audio_path, custom_output_names=custom_output_names)
+        self._set_result(os.path.join(output_dir, primary_stem_name))
         self.update(message='Separation completed')
     
     def _start(self, args):
