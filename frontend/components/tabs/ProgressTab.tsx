@@ -20,7 +20,10 @@ export default function FileJobTab() {
       setError(error);
       setIsLoading(false);
     }
-    const { socket, unsubscribe } = connectSocketIO('/job', '*', preJoin, onError);
+    const onJoined = () => {
+      setIsLoading(false);
+    }
+    const { socket, unsubscribe } = connectSocketIO('/job', '*', preJoin, onError, onJoined);
     socket.on('progress', (parsedData) => {
       const job = JobInfo.fromJSON(parsedData);
       setJobs((prevJobs) => ({ ...prevJobs, [job.jid]: job }));

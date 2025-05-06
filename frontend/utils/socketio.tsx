@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const connectSocketIO = (namespace: string, jobId: string, preJoin: () => void, onError: (error: string) => void) => {
+const connectSocketIO = (namespace: string, jobId: string, preJoin: () => void, onError: (error: string) => void, onJoined?: () => void) => {
     const socket = io(namespace, {
         transports: ['websocket'],
         path: '/ws',
@@ -53,12 +53,18 @@ const connectSocketIO = (namespace: string, jobId: string, preJoin: () => void, 
         retry();
     });
 
+    socket.on('joined', (data) => {
+        if (onJoined)
+            onJoined();
+    });
+
     const unsubscribe = () => {
         socket.off('connect');
         socket.off('progress');
         socket.off('disconnect');
         socket.off('error');
         socket.off('connect_error');
+        socket.off('joined');
         if (retryTimout) {
             clearTimeout(retryTimout);
         }
