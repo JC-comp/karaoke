@@ -19,10 +19,7 @@ def prepare_binder() -> None:
         scheduler.bind()
     except Exception as e:
         logger.error(f"Failed to bind scheduler: {e}")
-        return {
-            'success': False,
-            'message': 'Scheduler is not connected'
-        }, 500
+        return 'Scheduler is not connected', 500
     g.scheduler = scheduler
 
 @scheduler_bp.teardown_request
@@ -32,7 +29,8 @@ def close_binder(exception: Exception) -> None:
     This is called after each request to ensure that the scheduler is closed.
     """
     scheduler: SchedulerBinder = getattr(g, 'scheduler', None)
-    scheduler.close()
+    if scheduler:        
+        scheduler.close()
 
 @scheduler_bp.route('/create-job', methods=['POST'])
 def create_job() -> tuple:
