@@ -14,7 +14,6 @@ config = Config()
 app = Flask(__name__, static_url_path='/')
 app.config['UPLOAD_FOLDER'] = config.media_path
 app.static_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
-print(app.static_folder)
 socketio = SocketIO(app, path=config.socketio_path, cors_allowed_origins="*", async_mode='threading')
 
 logger = get_logger(__name__, config.log_level)
