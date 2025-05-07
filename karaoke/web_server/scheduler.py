@@ -38,7 +38,7 @@ class SchedulerBinder(Connection):
         jobs = self.json()
         return jobs
        
-    def get_artifact(self, jobId: str, artifact_type: str, artifact: int) -> str:
+    def get_artifact(self, jobId: str, artifact: int) -> dict:
         """
         Retrieve an artifact from the scheduler.
         Returns the artifact path and type.
@@ -51,14 +51,7 @@ class SchedulerBinder(Connection):
             'artifact': artifact
         }))
         artifact_result = self.json()
-        artifact = artifact_result['artifact']
-        if artifact_type == 'file':
-            base_path = artifact_result['base_path']
-            artifact = os.path.normpath(artifact)
-            base_path = os.path.normpath(base_path)
-            if artifact.startswith(base_path):
-                artifact = os.path.relpath(artifact, base_path)
-        return artifact
+        return artifact_result
 
     def create_by_YT(self, youtube_link: str) -> list[dict, int]:
         """
