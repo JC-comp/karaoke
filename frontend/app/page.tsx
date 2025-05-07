@@ -86,7 +86,7 @@ export default function Home() {
           {/* Tab Content */}
           <div className='position-relative'>
             <form ref={formRef} onSubmit={(e) => { e.preventDefault(); }}>
-              <div className={`tab-pane fade active ${isShowing ? 'show' : ''}`}>
+              <div className={`tab-pane fade active ${isShowing ? 'show' : ''}`} style={ isShowing ? {} : { height: '0', overflow: 'hidden' }}>
                 <SearchJobTab activeTab={activeTab} roomID={roomID} />
                 {
                   activeTab === 'youtube' && <YoutubeJobTab setIsProcessing={setIsProcessing} isProcessing={isProcessing} />

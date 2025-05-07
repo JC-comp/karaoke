@@ -11,7 +11,7 @@ export function useFetchArtifact(url: string | null, setError: (error: string) =
         fetch(url, { signal })
             .then((response) => {
                 return response.json().catch(() => {
-                    throw new Error(response.statusText);
+                    throw new Error(response.statusText || 'Failed to parse response: ' + response.status.toString());
                 });
             })
             .then((data) => {

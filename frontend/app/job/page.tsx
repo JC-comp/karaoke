@@ -90,8 +90,9 @@ const JobProcessPage = () => {
   }
 
   useEffect(() => {
-    if (prevJobInfo && prevJobInfo.status !== jobInfo?.status)
-      toast.info(`Job status changed to ${jobInfo?.status}`);
+    if (!jobInfo) return;
+    if (prevJobInfo && prevJobInfo.status !== jobInfo.status)
+      toast.info(`Job status changed to ${jobInfo.status}`);
   }, [jobInfo]);
 
   useEffect(() => {
