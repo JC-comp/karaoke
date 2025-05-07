@@ -163,16 +163,16 @@ class Scheduler:
             client.log(self.logger.error, f"Job {jobId} not found")
             client.error('Job not found')
             return
-        
-        artifact = job.get_artifact(artifact)
-        if artifact is None:
+        try:
+            artifact = job.get_artifact(artifact)
+        except IndexError:
             client.log(self.logger.error, f"Artifact {artifact} not found")
             client.error('Artifact not found')
             return
         client.log(self.logger.debug, f"Sending artifact {artifact}")
         client.send(json.dumps({
-            'artifact': artifact,
-            'base_path': self.config.media_path
+            'artifact_type': artifact[0],
+            'artifact': artifact[1]
         }))
         
     def handle_user(self, client: Client, client_info: dict) -> None:
