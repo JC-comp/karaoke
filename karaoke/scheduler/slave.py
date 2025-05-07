@@ -148,19 +148,24 @@ class SchedulerSlave:
 
 if __name__ == "__main__":
     config = Config()
-    slave = SchedulerSlave(config)
+    slave = None
     terminated = False
     while True:
         try:
+            slave = SchedulerSlave(config)
             slave.connect()
             slave.listen()
         except KeyboardInterrupt:
             terminated = True
             break
         except Exception as e:
-            slave.logger.error(f"Error connecting to scheduler: {e}", exc_info=True)
+            if slave:
+                slave.logger.error(f"Error connecting to scheduler: {e}", exc_info=True)
+            else:
+                print(f"Error connecting to scheduler: {e}", exc_info=True)
         finally:
-            slave.close()
-            if not terminated:    
-                slave.logger.info("Retrying in 5 seconds...")
-                time.sleep(5)
+            if slave:
+                slave.close()
+                if not terminated:
+                    slave.logger.info("Retrying in 5 seconds...")
+                    time.sleep(5)
