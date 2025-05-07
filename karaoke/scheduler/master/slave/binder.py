@@ -42,7 +42,7 @@ class SlaveBinder:
                         raise RuntimeError(f"Job {jobId} is not ready to be submitted")
                     if pid is not None:
                         self.processes[jobId] = Process(jobId, pid, self.client)
-                        self.submit_events[jobId].set()
+                    self.submit_events[jobId].set()
             elif action == "update":
                 jobId = message.get("jobId")
                 returncode = message.get("returncode")
