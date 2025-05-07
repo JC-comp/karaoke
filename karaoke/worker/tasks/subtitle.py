@@ -70,7 +70,7 @@ class SubtitleGenerator:
             alignX = 'left'
             alignY = 'bottom'
             x = 0.05
-            y = self.font_size * 0.33 * 2 - self.font_size
+            y = self.font_size * 0.33 * 2 + self.font_size
         else:
             alignX = 'right'
             alignY = 'bottom'
@@ -91,7 +91,7 @@ class SubtitleGenerator:
         self.currnet_line = line
 
     def export(self):
-        self.lines
+        return self.lines
 class GenerateSubtitleExecution(Execution):
     def _start(self, args):
         """
