@@ -1,4 +1,5 @@
 import io
+import os
 import json
 import logging
 import uuid
@@ -27,6 +28,17 @@ class LogListener(logging.Handler):
     def emit(self, _: logging.LogRecord) -> None:
         self.flush_output()
 
+def sentinize_path(path: str, base: str) -> str:
+    """
+    Converts a path to a sentinized path.
+    """
+    if not os.path.exists(path):
+        return path
+    abs_base = os.path.abspath(base)
+    abs_path = os.path.abspath(path)
+    if abs_path.startswith(abs_base):
+        return os.path.relpath(abs_path, abs_base)
+    return path
 class Task(BaseTask):
     def __init__(self, name: str, job: RemoteJob, execution_class: type[Execution], execution_kargs: dict=None) -> None:
         super().__init__(
@@ -124,8 +136,10 @@ class Task(BaseTask):
             artifact = json.dumps(artifact)
         elif attachments is not None:
             raise ValueError(f"Attachment is not supported for artifact type {artifact_type}")
+        else:
+            artifact = sentinize_path(artifact, self.config.media_path)
         
-        aid = self.job.add_artifact(artifact)
+        aid = self.job.add_artifact(artifact_type, artifact)
         if artifact_type == ArtifactType.PRODUCT:
             self.job.update(result_artifact_index=aid)
         else:
