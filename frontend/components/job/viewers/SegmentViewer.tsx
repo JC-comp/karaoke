@@ -32,7 +32,7 @@ export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { 
       return
     const body = JSON.parse(rawData);
     setSegments(body['segments']);
-    setAudioUrl(`/api/artifact/${jobId}/file/${body['audio']}`)
+    setAudioUrl(`/api/artifact/${jobId}/${body['audio']}`)
   }, [rawData]);
 
   function addRegion(wavesurfer: WaveSurfer) {

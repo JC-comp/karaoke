@@ -11,7 +11,7 @@ export default function ProductPreview({ jobInfo }: { jobInfo: JobInfo }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [playOriginalAudio, setPlayOriginalAudio] = useState(false);
 
-  const url = `/api/artifact/${jobInfo.jid}/plain/${jobInfo.result_artifact_index}`;
+  const url = `/api/artifact/${jobInfo.jid}/${jobInfo.result_artifact_index}`;
   const rawData = useFetchArtifact(url, setError);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
@@ -20,8 +20,8 @@ export default function ProductPreview({ jobInfo }: { jobInfo: JobInfo }) {
   useEffect(() => {
     if (rawData) {
       const data = JSON.parse(rawData)
-      setAudioUrl(`/api/artifact/${jobInfo.jid}/file/${data.vocal}`);
-      setProductUrl(`/api/artifact/${jobInfo.jid}/file/${data.result}`);
+      setAudioUrl(`/api/artifact/${jobInfo.jid}/${data.vocal}`);
+      setProductUrl(`/api/artifact/${jobInfo.jid}/${data.result}`);
     }
   }, [rawData]);
 

@@ -53,7 +53,7 @@ export default function ScheduleEmbbedPlayer({ kareokeRoomModel, jobId }: { kare
     useEffect(() => {
         if (!jobInfo) return;
         if (jobInfo.result_artifact_index < 0) return;
-        const url = `/api/artifact/${jobInfo.jid}/plain/${jobInfo.result_artifact_index}`;
+        const url = `/api/artifact/${jobInfo.jid}/${jobInfo.result_artifact_index}`;
         setResultUrl(url);
     }, [jobInfo]);
 
@@ -63,7 +63,7 @@ export default function ScheduleEmbbedPlayer({ kareokeRoomModel, jobId }: { kare
         if (!jobInfo) return;
 
         const data = JSON.parse(rawData)
-        setProductUrl(`/api/artifact/${jobInfo.jid}/file/${data.result}`);
+        setProductUrl(`/api/artifact/${jobInfo.jid}/${data.result}`);
     }, [rawData]);
 
     useEffect(() => {

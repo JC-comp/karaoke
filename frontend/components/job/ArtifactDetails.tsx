@@ -7,8 +7,7 @@ import ZoomPlugin from "wavesurfer.js/dist/plugins/zoom";
 import { JsonViewer, PlainViewer, SegmentViewer } from './viewers';
 
 function ArtifactComponent( { artifact, jobId, setIsLoading, setError }: { artifact: Artifact; jobId: string; setIsLoading: (isLoading: boolean) => void; setError: (error: string | null) => void } ) {
-  const fetch_type = ['video', 'audio'].includes(artifact.artifact_type) ? 'file' : 'plain';
-  const url = `/api/artifact/${jobId}/${fetch_type}/${artifact.aid}`;
+  const url = `/api/artifact/${jobId}/${artifact.aid}`;
   switch (artifact.artifact_type) {
     case 'video':
       return <video controls className="w-100" 
