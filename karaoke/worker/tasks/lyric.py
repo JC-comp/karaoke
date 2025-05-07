@@ -32,7 +32,7 @@ class FetchLyricsExecution(Execution):
         See https://www.musixmatch.com/search for more details.
         """
         # Check if the lyrics are already cached
-        lyrics_cache_path = os.path.join(self.config.media_path, args['source_video'] + '.lib')
+        lyrics_cache_path = os.path.join(self.config.media_path, args['source_audio'] + '.lib')
         if self.check_cache(lyrics_cache_path):
             self._set_result(lyrics_cache_path)
             self.update(message='Using cached lyrics')

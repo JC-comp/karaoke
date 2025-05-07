@@ -75,13 +75,17 @@ class DownloadYoutubeExecution(Execution):
                 raise ValueError("Duration not found in the video metadata")
             
             # Update the job with metadata
+            self.update_job(media={
+                'metadata': {
+                    'id': info['id'],
+                    'title': info['title'],
+                    'channel': info['channel'],
+                    'duration': info['duration']
+                }
+            })
             if self.format_key == 'video':
                 self.update_job(media={
                     'metadata': {
-                        'id': info['id'],
-                        'title': info['title'],
-                        'channel': info['channel'],
-                        'duration': info['duration'],
                         'width': info['width'],
                         'height': info['height'],
                         'fps': info['fps'],

@@ -1,6 +1,6 @@
 import logging
 
-from karaoke.worker.tasks.generate import GenerateVideoExecution
+from karaoke.worker.tasks.export import GenerateVideoExecution
 from karaoke.worker.tasks.task import Task, TaskStatus
 
 def test_generate(task: Task, logger: logging.Logger, passing_args: dict, prepare_data):
