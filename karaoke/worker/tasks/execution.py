@@ -3,11 +3,11 @@ import multiprocessing
 import logging
 import subprocess
 import time
-import traceback
 import threading
 
 from contextlib import redirect_stderr, redirect_stdout
 from .base import ExecuteTask
+from .runner_log import SyncHandler
 from .exception import SoftFailure
 from ...utils.config import Config
 from ...utils.task import ArtifactType
@@ -45,9 +45,14 @@ class Execution:
     def _start(self, args: dict) -> None:
         raise NotImplementedError("You must implement the _start method")
 
-    def start(self, task: ExecuteTask, logger: logging.Logger, args: dict) -> None:
+    def start(self, task: ExecuteTask, logger: logging.Logger, args: dict, handler_args: list[multiprocessing.Queue, int] = None) -> None:
         self.task = task
         self.logger = logger
+        if handler_args: 
+            message_queue, level = handler_args
+            handler = SyncHandler(message_queue)
+            logger.setLevel(level)
+            logger.addHandler(handler)
         self.logger.info(f"----- {self.name} -----\n")
         self.logger.debug(f"Arguments: {args}")
         self.update(status=TaskStatus.RUNNING)
