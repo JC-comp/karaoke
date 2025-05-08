@@ -92,30 +92,31 @@ class Execution:
         last_pos = 0
         cached_message = None
         buffer = ''
-        while thread.is_alive():
+        progress = progress_buffer.getvalue()
+        while thread.is_alive() or last_pos != len(progress):
             progress = progress_buffer.getvalue()
-            lastline = progress.split('\n')[-1]
+            lines = progress.split('\n')
+            if len(lines) == 1 or '\r' in lines[-1]:
+                lastline = lines[-1]
+            else:
+                lastline = lines[-2]
             messages = lastline.split('\r')
-            if progress.endswith('\r') or len(messages) == 1:
+            if len(messages) == 1:
                 message = messages[-1]
             else:
                 message = messages[-2]
-            if '\r' in lastline:
-                message += '\r'
-
-            if message and cached_message != message:
+            
+            if cached_message != message:
                 cached_message = message
                 self.passive_update(message=message)
+            
             if last_pos != len(progress):
-                buffer = self.record_buffer_time(buffer, progress[last_pos:])
+                new_message = progress[last_pos:]
+                buffer = self.record_buffer_time(buffer, new_message)
                 last_pos = len(progress)
-            time.sleep(0.5)
-        progress = progress_buffer.getvalue()
-        if last_pos != len(progress):
-            new_message = progress[last_pos:]
-            if not new_message.endswith('\n'):
-                new_message += '\n'
-            self.record_buffer_time(buffer, new_message)
+            time.sleep(0.1)
+        if buffer:
+            self.record_buffer_time(buffer, '\n')
 
         if self.thread_exception:
             raise self.thread_exception
