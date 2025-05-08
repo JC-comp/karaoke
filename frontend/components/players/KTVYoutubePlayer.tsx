@@ -48,7 +48,7 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
         const audio = audioRef.current;
         if (audio) {
             if (info.currentTime) {
-                if (Math.abs(audio.currentTime - info.currentTime) > 0.1)
+                if (Math.abs(audio.currentTime - info.currentTime) > 0.5)
                     audio.currentTime = info.currentTime;
                 setCurrentTime(info.currentTime);
             }
@@ -63,11 +63,9 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
         const container = containerRef.current;
         if (!container) return;
         const width = container.clientWidth;
-        console.log(width)
-        const { font_size, x, y, alignX, alignY } = args;
-        var result = {
-
-        } as Record<string, string>;
+        const height = container.clientHeight;
+        const { font_size, x, y, alignX, alignY, bottom } = args;
+        var result = {} as Record<string, string>;
         if (font_size) {
             result.fontSize = (font_size * width) + 'px';
         }
@@ -88,13 +86,16 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
         } else if (alignY === 'bottom') {
             if (y)
                 result.bottom = ((y || 0) * width) + 'px';
+        } else if (alignY === 'center') {
+            result.top = ((height - (bottom || 0) * width) / 2 + (y || 0) * width) + 'px';
         }
         return result;
     }
 
     useEffect(() => {
+        const preAnimTime = currentTime + 0.5;
         var result = subtitles.filter((subtitle) => {
-            return currentTime >= subtitle.start && currentTime <= subtitle.end;
+            return preAnimTime >= subtitle.start && preAnimTime <= subtitle.end;
         })
         setShowingSubtitles(result);
         const container = containerRef.current;
@@ -106,11 +107,11 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
             const start = parseFloat(wordElement.dataset.start || '0');
             const end = parseFloat(wordElement.dataset.end || '0');
             const duration = end - start;
-            const offset = Math.max(0, currentTime - start);
+            const offset = Math.max(0, preAnimTime - start);
             const percent = Math.max(0, Math.min(1, offset / duration));
             fg.style.width = (percent * 100) + '%';
         }
-    }, [currentTime]);
+    }, [currentTime, subtitles]);
 
     useEffect(() => {
         function onResize() {
@@ -122,12 +123,14 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
                 const fontSize = subtitleElement.dataset.fontSize;
                 const x = subtitleElement.dataset.x;
                 const y = subtitleElement.dataset.y;
+                const bottom = subtitleElement.dataset.bottom;
                 const alignX = subtitleElement.dataset.alignX;
                 const alignY = subtitleElement.dataset.alignY;
                 const styles = getSubtitleStyle({
                     font_size: fontSize ? parseFloat(fontSize) : undefined,
                     x: x ? parseFloat(x) : undefined,
                     y: y ? parseFloat(y) : undefined,
+                    bottom: bottom ? parseFloat(bottom) : undefined,
                     alignX: alignX,
                     alignY: alignY,
                 });
@@ -173,6 +176,7 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
                         data-align-y={subtitle.alignY}
                         data-x={subtitle.x}
                         data-y={subtitle.y}
+                        data-bottom={subtitle.bottom}
                         data-font-size={subtitle.font_size}
                     >
                         {

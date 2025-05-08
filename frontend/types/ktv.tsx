@@ -28,6 +28,7 @@ interface Subtitle {
     alignY: string;
     x?: number;
     y?: number;
+    bottom?: number;
     font_size: number;
     words: Word[];
 }
