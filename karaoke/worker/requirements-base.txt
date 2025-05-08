@@ -8,3 +8,5 @@ montreal-forced-aligner
 pynini
 kalpy-kaldi # pybind11[global], kaldi build
 pgvector
+shazamio
+opencc

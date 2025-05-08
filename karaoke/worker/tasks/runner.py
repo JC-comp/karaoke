@@ -80,9 +80,10 @@ class ProcessRunner:
             else:
                 self.task.logger.warning(f"Unknown message target: {message['target']}")
 
+
     def start(self) -> None:
         """
-        Starts the task execution in a separate process.
+        Starts the task execution in a separate process and wait for arguments to be passed.
         """
         self.task.logger.info(f"Starting capturing for task {self.task.name}")
         capture_thread = threading.Thread(target=self.start_capturing)
@@ -98,7 +99,7 @@ class ProcessRunner:
 
         process = multiprocessing.Process(
             target=self.task.execution.start, 
-            args=(sync_task, logger, self.task.get_running_args()),
+            args=(sync_task, logger),
             kwargs={
                 'handler_args': [self.message_queue, self.task.logger.level],
             }
@@ -126,3 +127,9 @@ class ProcessRunner:
             self.task.logger.error(f"Task {self.task.name} failed with exit code {process.exitcode}")
             self.task.update(status=TaskStatus.FAILED, message=f"Task failed with exit code {process.exitcode}")
         self.task.done()
+
+    def stop(self) -> None:
+        """
+        Stops the task execution.
+        """
+        self.task.execution.stop()

@@ -2,6 +2,7 @@ import urllib.parse
 
 from musicxmatch_api import MusixMatchAPI
 from .base import BaseLyricsProvider
+from .....utils.translate import convert_simplified_to_traditional
 
 def macro_search(api: MusixMatchAPI, q: str) -> dict:
     """
@@ -17,19 +18,19 @@ class MusixMatch(BaseLyricsProvider):
     """
     Search for the lyrics using the MusixMatch API.
     """
-    def search(self, title: str, artist:str) -> str:
+    def search(self, title: str, artist:str) -> tuple[str, str, str]:
         api = MusixMatchAPI()
         # Search for the lyrics using the title
-        best_match = self.search_track(api, title, artist)
+        best_match, found_title, found_artist = self.search_track(api, title, artist)
         if best_match['type'] != 'track':
             raise ValueError(f"Best match is not a track: {best_match['type']}")
         
         # Fetch the lyrics for the track
         track_id = best_match["id"]
         lyrics = self.get_lyrics(api, track_id)
-        return lyrics
+        return found_title, found_artist, lyrics
     
-    def search_track(self, api: MusixMatchAPI, title: str, artist: str) -> dict:
+    def search_track(self, api: MusixMatchAPI, title: str, artist: str) -> tuple[dict, str, str]:
         """
         Search for the track with the given title and artist using the MusixMatch API.
         """
@@ -46,32 +47,13 @@ class MusixMatch(BaseLyricsProvider):
         track_list = search_result['message']['body']['macro_result_list']['track_list']
         for track in track_list:
             if track['track']['track_id'] == track_id:
-                found_title = track['track']['track_name']
-                found_artist = track['track']['artist_name']
+                found_title = convert_simplified_to_traditional(track['track']['track_name'])
+                found_artist = convert_simplified_to_traditional(track['track']['artist_name'])
                 self.logger.info(f"Found track: {found_title} by {found_artist}")
-                if not self.compare_artist(artist, found_artist):
-                    self.validate_title(title, found_title)
+                
                 break
-        return best_match
-
-    def compare_artist(self, artist: str, found_artist: str) -> bool:
-        """
-        Compare the artist names.
-        """
-        cleaned_artist = artist.lower().replace(' ', '')
-        cleaned_found_artist = found_artist.lower().replace(' ', '')
-        if cleaned_artist in cleaned_found_artist or cleaned_found_artist in cleaned_artist:
-            return True
-        return False
+        return best_match, found_title, found_artist
     
-    def validate_title(self, title: str, found_title: str) -> bool:
-        """
-        Validate if the title matches the found title.
-        """
-        if title.lower() == found_title.lower():
-            return True
-        raise ValueError(f"Title mismatch: {title} != {found_title}")
-
     def get_lyrics(self, api: MusixMatchAPI, track_id: str) -> str:
         """
         Fetch the lyrics for the track found using the MusixMatch API.
@@ -90,6 +72,6 @@ class MusixMatch(BaseLyricsProvider):
         if lyrics_json['lyrics_body'] == '':
             raise Exception(f"Lyrics are empty: {lyrics_json}")
         
-        lyrics = lyrics_json['lyrics_body']
+        lyrics = convert_simplified_to_traditional(lyrics_json['lyrics_body'])
         return lyrics
     

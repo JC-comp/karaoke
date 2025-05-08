@@ -39,6 +39,14 @@ class AlignLyricsExecution(Execution):
 
         return acoustic_model, lexicon_compiler
 
+    def _preload(self):
+        self.lang = 'zh'
+        self.logger.info("Preloading models for alignment task")
+        acoustic_model, lexicon_compiler = self.load_models(self.lang)
+        self.acoustic_model = acoustic_model
+        self.lexicon_compiler = lexicon_compiler
+        self.logger.info("Models preloaded")
+
     def align(
         self, 
         pbar: tqdm.tqdm,
@@ -61,27 +69,31 @@ class AlignLyricsExecution(Execution):
         text = ' '.join(text)
 
         pbar.set_description(f"Generating audio features")
+
         seg = Segment(sound_file_path, start, end)
         utt = KalpyUtterance(seg, text)
-        utt.generate_mfccs(acoustic_model.mfcc_computer)
-        cmvn = CmvnComputer().compute_cmvn_from_features([utt.mfccs])
-        utt.apply_cmvn(cmvn)
 
         ctm = None
-        for beam in [10, 40]:
-            try:
-                pbar.set_description(f'Aligning with beam {beam}')
-                ctm = align_utterance_online(
-                    acoustic_model,
-                    utt,
-                    lexicon_compiler,
-                    beam=beam,
-                )
-                break
-            except Exception as e:
-                self.logger.debug(f'Error during alignment: {e}')
-                continue
-        
+        try:
+            utt.generate_mfccs(acoustic_model.mfcc_computer)
+            cmvn = CmvnComputer().compute_cmvn_from_features([utt.mfccs])
+            utt.apply_cmvn(cmvn)
+
+            for beam in [10, 40]:
+                try:
+                    pbar.set_description(f'Aligning with beam {beam}')
+                    ctm = align_utterance_online(
+                        acoustic_model,
+                        utt,
+                        lexicon_compiler,
+                        beam=beam,
+                    )
+                    break
+                except Exception as e:
+                    self.logger.debug(f'Error during alignment: {e}')
+                    continue
+        except Exception as e:
+            self.logger.debug(f'Error during feature generation: {e}')
         
         segment_text = text.split(' ')
         if ctm is None:
@@ -133,19 +145,31 @@ class AlignLyricsExecution(Execution):
         lang, aligned_lyrics_cache_path, audio_path, sound_file_path, mapped_lyrics = args
         # Load the acoustic model and lexicon compiler
         self.update(message='Loading acoustic model')
-        acoustic_model, lexicon_compiler = self.load_models(lang)
+        if self.lang != lang:
+            acoustic_model, lexicon_compiler = self.load_models(lang)
+            self.acoustic_model = acoustic_model
+            self.lexicon_compiler = lexicon_compiler
         
         # Align the lyrics with the audio
         pbar = tqdm.tqdm(mapped_lyrics, unit='lyric')
         aligned_lyrics = []
         for lyrics in pbar:
-            result = self.align(
-                pbar,
-                acoustic_model, lexicon_compiler, 
-                sound_file_path, 
-                lyrics['text'], lyrics['start'], lyrics['end']
-            )
-            pbar.update(1)
+            if len(lyrics['text']) == 1:
+                result = [
+                    {
+                        'word': lyrics['text'],
+                        'start': lyrics['start'],
+                        'end': lyrics['end']
+                    }
+                ]
+            else:
+                result = self.align(
+                    pbar,
+                    self.acoustic_model, self.lexicon_compiler, 
+                    sound_file_path, 
+                    lyrics['text'], lyrics['start'], lyrics['end']
+                )
+            
             aligned_lyrics.extend(result)
 
         self._set_result(audio_path, aligned_lyrics_cache_path, aligned_lyrics)

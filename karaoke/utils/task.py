@@ -64,6 +64,12 @@ class BaseTask:
             value = TaskStatus(value)
         super().__setattr__(name, value)
 
+    def is_pending(self) -> bool:
+        """
+        Checks if the task is pending.
+        """
+        return self.status == TaskStatus.PENDING
+
     def is_running(self) -> bool:
         """
         Checks if the task is currently running.

@@ -3,6 +3,7 @@ import os
 
 from .task import Task, Execution, ArtifactType
 from ..job import RemoteJob
+from ...utils.translate import convert_simplified_to_traditional
 
 def convert_timestamps(segments: list[dict], time: float):
     """
@@ -23,6 +24,21 @@ def convert_timestamps(segments: list[dict], time: float):
     return closest_segment['original_start'] + time - closest_segment['start']
 
 class TranscriptLyricsExecution(Execution):
+    def _preload(self) -> bool:
+        """
+        Preload any resources needed for the task.
+        """
+        self.logger.info("Loading whisper model")
+        import whisper
+        import torch
+        if torch.cuda.is_available():
+            model = whisper.load_model(self.config.whisper_gpu_model)
+        else:
+            model = whisper.load_model(self.config.whisper_cpu_model)
+        self.model = model
+        self.logger.info("Whisper model loaded")
+        return True
+
     def _set_result(self, vad_vocal_path: str, transcription_cache_path: str, segments: list[dict]) -> None:
         """
         Set the result of the transcription task.
@@ -56,32 +72,26 @@ class TranscriptLyricsExecution(Execution):
                 self.update(message='Found transcription in cache')
                 return
 
-        self.logger.info("Lazy loading whisper")
-        import whisper
-        import torch
-            
-        self.update(message="Loading transcription model")
-        if torch.cuda.is_available():
-            model = whisper.load_model(self.config.whisper_gpu_model)
-        else:
-            model = whisper.load_model(self.config.whisper_cpu_model)
         self.update(message="Starting transcription")
         
         initial_prompt = self.config.whisper_initial_prompt
-        result = model.transcribe(
-            vad_vocal_path, language="zh", initial_prompt=initial_prompt, verbose=False
+        result = self.model.transcribe(
+            vad_vocal_path, language="zh", initial_prompt=initial_prompt, 
+            word_timestamps=True,
+            verbose=False
         )
         self.update(message="Collecting transcription results")
         segments = [
             {
-                "start": convert_timestamps(vad_segments, segment["start"]),
-                "end": convert_timestamps(vad_segments, segment["end"]),
-                "original_start": segment["start"],
-                "original_end": segment["end"],
-                "text": segment["text"],
+                "start": convert_timestamps(vad_segments, words["start"]),
+                "end": convert_timestamps(vad_segments, words["end"]),
+                "original_start": words["start"],
+                "original_end": words["end"],
+                "text": convert_simplified_to_traditional(words["word"]),
                 "no_speech_prob": segment["no_speech_prob"],
             }
             for segment in result['segments']
+            for words in segment['words']
         ]
         with open(transcription_cache_path, 'w') as f:
             json.dump(segments, f, ensure_ascii=False)

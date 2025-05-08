@@ -2,10 +2,28 @@ import os
 
 from .execution import SoftFailure
 from .task import Task, Execution, ArtifactType
-from .providers.lyrics.musicmatch import MusixMatch
+from .providers.lyrics import PROVIDERS
 from ..job import RemoteJob
 
-PROVIDERS = [MusixMatch]
+def compare_artist(artist: str, found_artist: str) -> bool:
+    """
+    Compare the artist names.
+    """
+    if not artist or not found_artist:
+        return False
+    cleaned_artist = artist.lower().replace(' ', '')
+    cleaned_found_artist = found_artist.lower().replace(' ', '')
+    if cleaned_artist in cleaned_found_artist or cleaned_found_artist in cleaned_artist:
+        return True
+    return False
+
+def validate_title(title: str, found_title: str) -> bool:
+    """
+    Validate if the title matches the found title.
+    """
+    if title.replace(' ', '').lower() == found_title.replace(' ', '').lower():
+        return True
+    raise ValueError(f"Title mismatch: {title} != {found_title}")
 
 class FetchLyricsExecution(Execution):
     def check_cache(self, lyrics_cache_path: str) -> bool:
@@ -47,13 +65,21 @@ class FetchLyricsExecution(Execution):
         if title is None:
             raise SoftFailure("No title found to search for lyrics")
         
+        lyrics = None
         for provider_type in PROVIDERS:
             provider = provider_type(self)
             try:
-                lyrics = provider.search(title, artist)
+                found_title, found_artist, lyrics = provider.search(title, artist)
+                if not compare_artist(artist, found_artist):
+                    self.logger.warning(f"Artist mismatch: {artist} != {found_artist}")
+                    validate_title(title, found_title)
+                break
             except Exception as e:
                 provider.logger.error(f"{e}", exc_info=True)
-                raise SoftFailure("Failed to fetch lyrics")
+                lyrics = None
+        
+        if lyrics is None:
+            raise SoftFailure("Failed to fetch lyrics")
 
         self.passing_args['lyrics'] = lyrics
         # Save the lyrics to the cache
@@ -61,7 +87,6 @@ class FetchLyricsExecution(Execution):
             f.write(lyrics)
         self._set_result(lyrics_cache_path)
         self.update(message='Lyrics retrieval completed')
-
 
 class FetchLyrics(Task):
     def __init__(self, job: RemoteJob):

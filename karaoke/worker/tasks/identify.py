@@ -1,20 +1,13 @@
 from .execution import SoftFailure
 from .task import Task, Execution,ArtifactType
 from .providers.utils import NotEnabledException
-from .providers.identify.base import BaseIdentifier
-from .providers.identify.fingerprint import FingerprintIdentifier
-from .providers.identify.gpt import GPTIdentifier
+from .providers.identify import PROVIDERS
 from ..job import RemoteJob
-
-PROVIDERS: list[type[BaseIdentifier]] = [FingerprintIdentifier, GPTIdentifier]
 
 class IdentifyMusicExecution(Execution):
     def identify_music(self, args: dict) -> tuple[str, str]:
         """
-        Identify music using available methods.
-            1. AcoustID fingerprinting
-               See https://acoustid.org/ for more details.
-            2. GPT-based artist and title extraction
+        Identify music using available providers.
         """
         audio_path = args['source_audio']
         media = args['media']

@@ -88,6 +88,8 @@ def grouping(lyrics_characters: list, transcription_characters: list) -> list:
     sentences = [{
         'start': transcription_characters[0]['start'],
         'end': transcription_characters[0]['end'],
+        'start_mapped_index': 0,
+        'end_mapped_index': 0,
         'text': ''
     }]
     current_group = 0
@@ -103,9 +105,12 @@ def grouping(lyrics_characters: list, transcription_characters: list) -> list:
                 pair -= 1
                 if should_insert_new_group(pair, transcription_characters, current_group, last_lyrics_character_pair):
                     sentences[-1]['end'] = transcription_characters[last_lyrics_character_pair]['end']
+                    sentences[-1]['end_mapped_index'] = last_lyrics_character_pair
                     sentences.append({
                         'start': transcription_characters[pair]['start'],
                         'end': transcription_characters[pair]['end'],
+                        'start_mapped_index': pair,
+                        'end_mapped_index': pair,
                         'text': ''
                     })
                     current_group = transcription_characters[pair]['group']
@@ -116,6 +121,52 @@ def grouping(lyrics_characters: list, transcription_characters: list) -> list:
             sentences[-1]['text'] += lyrics_characters[current_lyrics_character_index]['char']
             current_lyrics_character_index += 1
     sentences[-1]['end'] = transcription_characters[-1]['end']
+    sentences[-1]['end_mapped_index'] = len(transcription_characters) - 1
+    return sentences
+
+def unwrap_misspelled_characters(sentences: list, transcription_characters: list) -> list:
+    """
+    Unwrap the sentences with the same length as the transcription characters but different
+    characters.
+    """
+    i = 0
+    while i < len(sentences):
+        sentence = sentences[i]
+        start_mapped_index = sentence['start_mapped_index']
+        end_mapped_index = sentence['end_mapped_index']
+        text = sentence['text']
+        # Check if the length of the grouped sentence is the same as the length of the transcription
+        if len(text) != (end_mapped_index - start_mapped_index + 1):
+            i += 1
+            continue
+        # Split the sentence into two sentences
+        transcription_sentence = transcription_characters[start_mapped_index]
+        transcription_sentence_len = len(transcription_sentence['text'])
+        unwrap_end_mapped_index = start_mapped_index + transcription_sentence_len - 1
+        mapped_sentence = {
+            'start': transcription_sentence['start'],
+            'end': transcription_sentence['end'],
+            'text': text[:transcription_sentence_len],
+            'start_mapped_index': start_mapped_index,
+            'end_mapped_index': unwrap_end_mapped_index
+        }
+
+        remaining_text = text[transcription_sentence_len:]
+        if len(remaining_text) == 0:
+            # If the remaining text is empty, we can just update the sentence
+            sentences[i] = mapped_sentence
+        else:
+            # If the remaining text is not empty, we need to split the sentence
+            next_mapped_index = unwrap_end_mapped_index + 1
+            sentences[i] = {
+                'start': transcription_characters[next_mapped_index]['start'],
+                'end': sentences[i]['end'],
+                'text': remaining_text,
+                'start_mapped_index': next_mapped_index,
+                'end_mapped_index': end_mapped_index
+            }
+            sentences.insert(i, mapped_sentence)
+        i += 1
     return sentences
 
 class MapLyricsExecution(Execution):
@@ -179,7 +230,8 @@ class MapLyricsExecution(Execution):
             raise SoftFailure(f"Not enough match found ({dp[-1][-1]} / {len(lyrics_characters)} / {len(transcription_characters)}), using transcription")
 
         self.update(message='Remapping timestamps')
-        sentences = grouping(lyrics_characters, transcription_characters)
+        grouped_sentences = grouping(lyrics_characters, transcription_characters)
+        sentences = unwrap_misspelled_characters(grouped_sentences, transcription_characters)
 
         self._set_result(vocal_path, mapped_lyrics_cache_path, sentences)
         with open(mapped_lyrics_cache_path, 'w') as f:

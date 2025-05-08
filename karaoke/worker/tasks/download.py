@@ -7,24 +7,20 @@ from ..job import RemoteJob
 class LoggerHook:
     def __init__(self, execution: Execution):
         self.execution = execution
-        self.buffer = ''
 
     def handle(self, msg):
         self.execution.update(message=msg)
         
     def progress_hooks(self, d):
         message = d['_default_template']
-        self.execution.passive_update(message=message)
         if d['status'] == 'finished':
             message += '\n'
         else:
             message += '\r'
-        self.buffer = self.execution.record_buffer_time(self.buffer, message)
+        self.execution.progress_buffer.write(message)
     
     def flush(self):
-        if self.buffer:
-            self.buffer += '\n'
-            self.buffer = self.execution.record_buffer_time(self.buffer, '')
+        self.execution.progress_buffer.flush_progress()
 
     def info(self, msg):
         self.handle(msg)

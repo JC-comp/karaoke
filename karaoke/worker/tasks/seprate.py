@@ -9,6 +9,23 @@ class SeperateAudioExecution(Execution):
         self.model_name = model_name
         self.passing_key = passing_key
 
+    def _preload(self) -> bool:
+        """
+        Preload models for the separation task.
+        """
+        self.logger.info("Preloading models for separation task")
+        from audio_separator.separator import Separator
+        self.output_format = "mp3"
+        separator = Separator(
+            model_file_dir='model',
+            output_format=self.output_format,
+            output_single_stem=self.passing_key
+        )
+        separator.load_model(model_filename=self.model_name)
+        self.separator = separator
+        self.logger.info("Models preloaded")
+        return True
+
     def _set_result(self, audio_path: str) -> None:
         """
         Set the result of the separation task.
@@ -22,13 +39,11 @@ class SeperateAudioExecution(Execution):
         Run in a separate process so that we can capture the output and error streams.
         See https://github.com/nomadkaraoke/python-audio-separator for more details.
         """
-        self.logger.info("Lazy loading audio-separator")
         audio_path, output_dir = args
         
         audio_file_base = os.path.splitext(os.path.basename(audio_path))[0]
-        output_format = "mp3"
         primary_stem_name = f"{audio_file_base}_{self.passing_key}"
-        primary_stem_path = os.path.join(output_dir, primary_stem_name + '.' + output_format)
+        primary_stem_path = os.path.join(output_dir, primary_stem_name + '.' + self.output_format)
         custom_output_names = {
             self.passing_key: primary_stem_name,
         }
@@ -38,17 +53,10 @@ class SeperateAudioExecution(Execution):
             self._set_result(primary_stem_path)
             return
 
-        self.update(message='Loading model')
-        from audio_separator.separator import Separator
-        separator = Separator(
-            model_file_dir='model',
-            output_dir=output_dir,
-            output_format=output_format,
-            output_single_stem=self.passing_key
-        )
-        separator.load_model(model_filename=self.model_name)
         # Run the separation 
-        primary_stem_name, = separator.separate(audio_path, custom_output_names=custom_output_names)
+        self.separator.output_dir = output_dir
+        self.separator.model_instance.output_dir = output_dir
+        primary_stem_name, = self.separator.separate(audio_path, custom_output_names=custom_output_names)
         self._set_result(os.path.join(output_dir, primary_stem_name))
         self.update(message='Separation completed')
     

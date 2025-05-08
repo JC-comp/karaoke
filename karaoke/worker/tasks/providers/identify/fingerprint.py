@@ -1,7 +1,8 @@
 import acoustid
 
-from ..utils import NotEnabledException
 from .base import BaseIdentifier
+from ..utils import NotEnabledException
+from .....utils.translate import convert_simplified_to_traditional
 
 class FingerprintIdentifier(BaseIdentifier):
     name = "FingerprintIdentifier"
@@ -28,13 +29,13 @@ class FingerprintIdentifier(BaseIdentifier):
                 if artists:
                     artist_name = "".join(
                         [
-                            artist["name"] + artist.get("joinphrase", "")
+                            convert_simplified_to_traditional(artist["name"]) + artist.get("joinphrase", "")
                             for artist in artists
                         ]
                     )
                 else:
                     artist_name = None
-            title = recording.get('title')
+            title = convert_simplified_to_traditional(recording.get('title'))
             self.logger.info(f"Found music: {title} by {artist_name} with score {score}")
             return title, artist_name
         raise Exception("No music found with fingerprint")

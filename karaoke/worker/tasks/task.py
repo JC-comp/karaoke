@@ -84,6 +84,11 @@ class Task(BaseTask):
                 self.update(status=TaskStatus.CANCELED, message=f"Task canceled due to incomplete prerequisite: {prerequisite.name}")
                 return False
         return True
+    
+    def run(self) -> None:
+        args = self.get_running_args()
+        self.passive_update(message="Waiting for preloading to complete")
+        self.execution.run(args)
 
     def set_passing_args(self, args: dict[str, any]) -> None:
         """

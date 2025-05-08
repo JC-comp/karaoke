@@ -8,12 +8,13 @@ from ...utils.config import Config, get_logger
 from ...utils.job import JobStatus
 
 class Pipeline:
+    runners: dict[str, ProcessRunner]
     def __init__(self, job: RemoteJob):
         self.job = job
         self.tasks: list[Task] = self.build_pipeline()
+        self.runners = {}
         self.logger = get_logger(__name__, Config().log_level)
-        self.operation_lock = threading.Lock()
-        self.operation_signal = threading.Event()
+        self.operation_lock = threading.Condition()
 
     def build_pipeline(self) -> list[Task]:
         """
@@ -21,22 +22,40 @@ class Pipeline:
         """
         raise NotImplementedError("You must implement the build_pipeline method")
     
-    def run_task(self, task: Task) -> None:
+    def run_task(self, runner: ProcessRunner) -> None:
         """
         Runs the task in a separate thread. 
         We will wake up the executor thread when the task is done.
         """
+        task = runner.task
         self.logger.info(f"Starting task: {task.name}")
         try:
-            ProcessRunner(task).start()
+            runner.start()
             task.done()
         except Exception as e:
             task.update(status=TaskStatus.FAILED, message=str(e))
             self.logger.error(f'Task failed: {task.name}', exc_info=True)
         finally:
             with self.operation_lock:
-                self.operation_signal.set()
-            
+                self.operation_lock.notify_all()
+    
+    def pre_start(self) -> None:
+        """
+        Builds the runners for each task in the pipeline.
+        """
+        for task in self.tasks:
+            if task.name not in self.runners:
+                runner = ProcessRunner(task)
+                threading.Thread(target=self.run_task, args=(runner,)).start()
+                self.runners[task.name] = runner
+
+    def post_start(self) -> None:
+        """
+        Recycles the runners for each task in the pipeline.
+        """
+        for runner in self.runners.values():
+            runner.stop()
+
     def start(self) -> None:
         """
         Starts the pipeline execution according to the task dependencies.
@@ -44,6 +63,8 @@ class Pipeline:
         self.logger.info(f'Starting pipeline with job ID: {self.job.jid}')
         self.job.update(status=JobStatus.RUNNING)
         
+        self.pre_start()
+
         # Initialize the queue with tasks that have no prerequisites
         pending: queue.Queue[Task] = queue.Queue()
         prerequisite_count: dict[str, int] = {}
@@ -53,16 +74,9 @@ class Pipeline:
                 pending.put(task)
         
         running_tasks: list[Task] = []
-        while not pending.empty() or running_tasks:
-            self.logger.info(f'pending task: {pending.qsize()}')
-            self.logger.info(f'running tasks: {len(running_tasks)}')
-            if pending.empty() and running_tasks:
-                self.logger.info("Waiting for tasks to finish...")
-                self.operation_signal.wait()
-            
-            self.logger.info("Start processing tasks...")
-            with self.operation_lock:
-                self.operation_signal.clear()
+        with self.operation_lock:
+            while not pending.empty() or running_tasks:
+                self.logger.info("Handling task dependencies...")
                 # check if any task has finished and update subsequent tasks
                 finished_tasks = [
                     task
@@ -71,13 +85,22 @@ class Pipeline:
                 ]
                 for task in finished_tasks:
                     running_tasks.remove(task)
-                    for task in task.subsequent_tasks:
-                        prerequisite_count[task.name] -= 1
-                        if prerequisite_count[task.name] == 0:
-                            pending.put(task)
+                    for subtask in task.subsequent_tasks:
+                        prerequisite_count[subtask.name] -= 1
+                        if prerequisite_count[subtask.name] == 0:
+                            pending.put(subtask)
+
+                self.logger.info(f'pending task: {pending.qsize()}')
+                self.logger.info(f'running tasks: {len(running_tasks)}')
                 # Waiting for running tasks to finish if there are no pending tasks
                 if pending.empty():
-                    continue
+                    if running_tasks:
+                        self.logger.info("Waiting for tasks to finish...")
+                        self.operation_lock.wait()
+                        continue
+                    else:
+                        self.logger.info("No tasks to run, exiting...")
+                        break
                 
                 # We have pending tasks, start one of them
                 task = pending.get()
@@ -89,12 +112,14 @@ class Pipeline:
                     continue
                 
                 if task.is_prerequisite_fulfilled():
-                    task.update(status=TaskStatus.QUEUED)
-                    thread = threading.Thread(target=self.run_task, args=(task,))
-                    thread.start()
+                    if task.is_pending():
+                        task.update(status=TaskStatus.QUEUED)
+                    else:
+                        self.logger.info(f"Task {task.name} not in pending state: {task.status}")
+                    task.run()
                 else:
-                    self.operation_signal.set()
                     self.logger.info(f"Task {task.name} failed due to incomplete prerequisites.")
-
+        
+        self.post_start()
         self.job.done()
         self.logger.info('Pipeline execution completed.')

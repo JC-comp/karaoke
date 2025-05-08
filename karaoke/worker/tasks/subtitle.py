@@ -13,39 +13,44 @@ class SubtitleGenerator:
         self.lines = []
 
     def add_poster(self, title: str, artist: str):
-        head_height = 1 - (self.padding * 3 + self.font_size * 2)
-        head_mid = head_height / 2
-        title_font_size = 0.9 / len(title)
-        artist_font_size = 0.9 / len(artist)
-        if artist_font_size > title_font_size:
-            artist_font_size = title_font_size * 0.6
+        if len(title) > 10:
+            title = title[:9] + '...'
+        if len(artist) > 10:
+            artist = artist[:9] + '...'
+        title_font_size = 0.9 / 10
+        artist_font_size = title_font_size * 0.8
+
+        head_height = (self.padding * 3 + self.font_size * 2) + self.padding * 2
+        
         self.lines.append({
-            'start': 0,
-            'end': 3,
+            'start': 1,
+            'end': 6,
             'alignX': 'center',
-            'alignY': 'top',
-            'y': head_mid - title_font_size,
+            'alignY': 'center',
+            'y': -title_font_size / 2 - self.padding,
+            'bottom': head_height,
             'font_size': title_font_size,
             'words': [
                 {
                     'word': title,
-                    'start': 0,
-                    'end': 0
+                    'start': 1,
+                    'end': 1
                 }
             ]
         })
         self.lines.append({
-            'start': 0,
-            'end': 3,
+            'start': 1,
+            'end': 6,
             'alignX': 'center',
-            'alignY': 'top',
-            'y': head_mid,
+            'alignY': 'center',
+            'y': artist_font_size / 2 + self.padding,
+            'bottom': head_height,
             'font_size': artist_font_size,
             'words': [
                 {
                     'word': artist,
-                    'start': 0,
-                    'end': 0
+                    'start': 1,
+                    'end': 1
                 }
             ]
         })
@@ -58,6 +63,14 @@ class SubtitleGenerator:
         else:
             # show the first line at 1 second before the first word
             start_time = max(line[0]['start'] - 1, 0)
+        
+        # Adjust poster time to fade out 3 seconds before the first line
+        if self.line_count == 0:
+            pre_first_line = start_time - 3
+            for poster in self.lines:
+                if pre_first_line > poster['end']:
+                    poster['end'] = pre_first_line
+
         if next_line is not None:
             # goes away when the next line is played to the middle
             mid = len(next_line) // 2
@@ -102,8 +115,8 @@ class GenerateSubtitleExecution(Execution):
         instrumental_path = args['Instrumental_only']
         sentences_block = args['sentences_block']
         
-        title = args.get('title') or media.metadata.get('title') or 'Unknown Title'
-        artist = args.get('artist') or media.metadata.get('channel') or 'Unknown Artist'
+        title = args.get('title') or media.metadata.get('title') or 'Unknown'
+        artist = args.get('artist') or media.metadata.get('channel') or 'Unknown'
         
         generator = SubtitleGenerator(media.metadata.get('duration'))
         generator.add_poster(title, artist)

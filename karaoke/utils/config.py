@@ -144,10 +144,6 @@ class Config:
         self.acoustid_enabled = config.getboolean('acoustid', 'enabled', fallback=False)
         self.acoustid_api_key = config.get('acoustid', 'api_key', fallback='xxxxxxxxx')
 
-        self.gpt_enabled = config.getboolean('gpt', 'enabled', fallback=False)
-        self.gpt_endpoint = config.get('gpt', 'endpoint', fallback='http://localhost:8080/api/chat/completions')
-        self.gpt_token = config.get('gpt', 'token', fallback='xxxxxxxxx')
-
         self.whisper_cpu_model = config.get('transcription', 'cpu_model', fallback='large-v3-turbo')
         self.whisper_gpu_model = config.get('transcription', 'gpu_model', fallback='medium')
         self.whisper_initial_prompt = config.get('transcription', 'initial_prompt', fallback=None)

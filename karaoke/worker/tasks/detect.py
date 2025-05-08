@@ -12,7 +12,6 @@ class VoiceActivityExecution(Execution):
         """
         vocal_path = args['Vocals_only']
         vad_vocal_path = args['Vocals_only'] + '_vad.mp3'
-        vad_segments_cache = args['Vocals_only'] + '_vad.seg'
 
         self.update(message='Detecting voice activity')
         # Split the audio into segments
@@ -52,9 +51,6 @@ class VoiceActivityExecution(Execution):
             }]
         )
 
-        with open(vad_segments_cache, 'w') as f:
-            json.dump(segments, f, ensure_ascii=False)
-        
         self.update(message="Voice activity detection completed")
         
 class VoiceActivity(Task):
