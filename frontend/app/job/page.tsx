@@ -20,6 +20,7 @@ import styles from './page.module.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@/components/job/ProductPreview.css';
 import '@/components/job/ArtifactDetails.css';
+import '@/components/players/KTVYoutubePlayer.css';
 
 
 

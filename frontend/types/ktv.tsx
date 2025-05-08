@@ -15,3 +15,19 @@ interface Room {
     volume: number;
     playlist: PlaylistItem[];
 }
+
+interface Word {
+    word: string;
+    start: number;
+    end: number;
+}
+interface Subtitle {
+    start: number;
+    end: number;
+    alignX: string;
+    alignY: string;
+    x?: number;
+    y?: number;
+    font_size: number;
+    words: Word[];
+}
