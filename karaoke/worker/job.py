@@ -21,7 +21,8 @@ class CommandJob(BaseJob):
             job_type=job_type, media=media,
             status=JobStatus.PENDING, message='Waiting for scheduler...',
             isProcessExited=False, last_update=time.time(), 
-            tasks={}, result_artifact_index=-1, artifacts=None
+            artifact_tags={},
+            tasks={}, artifacts=None
         )
         self.logger = get_logger(__name__, Config().log_level)
 

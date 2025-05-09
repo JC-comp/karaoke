@@ -95,7 +95,11 @@ class DownloadYoutubeExecution(Execution):
             ydl.process_info(info)
 
             artifact_type = ArtifactType.VIDEO if self.format_key == 'video' else ArtifactType.AUDIO
-            self.add_artifact('Original ' + self.format_key, artifact_type, self.passing_args['source_' + self.format_key])
+            self.add_artifact(
+                name='Original ' + self.format_key,
+                artifact_type=artifact_type,
+                artifact=self.passing_args['source_' + self.format_key]
+            )
         self.update(message='Download successful')
         logger.flush()
 

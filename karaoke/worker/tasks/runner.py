@@ -34,13 +34,8 @@ class SyncTask(ExecuteTask):
     def passive_update(self, **kwargs) -> None:
         self.push('passive_update', **kwargs)
 
-    def add_artifact(
-        self, 
-        name: str, artifact_type: ArtifactType, 
-        artifact: str | dict,
-        attachments: dict | None = None
-    ) -> None:
-        self.push('artifact', name=name, artifact_type=artifact_type, artifact=artifact, attachments=attachments)
+    def add_artifact(self, **kwargs) -> None:
+        self.push('artifact', **kwargs)
 
     def push(self, target: str, **kwargs) -> None:
         self.job.push(target, **kwargs)

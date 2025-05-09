@@ -48,8 +48,7 @@ class YoutubePipeline(Pipeline):
 
         sentence.add_prerequisite(align)
 
-        subtitle.add_prerequisite(seperate_instrument)
-        subtitle.add_prerequisite(identify)
+        subtitle.add_prerequisite(identify) # using identified title and artist
         subtitle.add_prerequisite(sentence)
 
         return [

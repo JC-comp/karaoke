@@ -138,20 +138,9 @@ class GenerateVideoExecution(Execution):
 
         self.add_artifact(
             name="Product", 
-            artifact_type=ArtifactType.PRODUCT, 
-            artifact={},
-            attachments=[
-                {
-                    'name': 'vocal',
-                    'artifact_type': ArtifactType.AUDIO,
-                    'artifact': vocal_path
-                },
-                {
-                    'name': 'result',
-                    'artifact_type': ArtifactType.VIDEO,
-                    'artifact': video_output_path
-                }
-            ]
+            tag="product",
+            artifact_type=ArtifactType.VIDEO, 
+            artifact=video_output_path
         )
         self.update(message="Video generated successfully")
         

@@ -15,10 +15,9 @@ class ExecuteTask:
     def passive_update(self, **kwargs) -> None:
         raise NotImplementedError("This method should be overridden in subclasses.")
         
-    
     def set_passing_args(self, args: dict) -> None:
         raise NotImplementedError("This method should be overridden in subclasses.")
         
-    def add_artifact(self, name: str, artifact_type: ArtifactType, artifact: str | dict, attachments: dict | None):
+    def add_artifact(self, **kwargs) -> None:
         raise NotImplementedError("This method should be overridden in subclasses.")
         

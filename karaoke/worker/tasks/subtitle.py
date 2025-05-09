@@ -105,6 +105,7 @@ class SubtitleGenerator:
 
     def export(self):
         return self.lines
+
 class GenerateSubtitleExecution(Execution):
     def _start(self, args):
         """
@@ -112,7 +113,6 @@ class GenerateSubtitleExecution(Execution):
         """
         self.update(message='Generating subtitles')
         media = args['media']
-        instrumental_path = args['Instrumental_only']
         sentences_block = args['sentences_block']
         
         title = args.get('title') or media.metadata.get('title') or 'Unknown'
@@ -126,18 +126,11 @@ class GenerateSubtitleExecution(Execution):
             generator.add_line(sentence, next_sentence)
 
         self.add_artifact(
-            name="Product", 
-            artifact_type=ArtifactType.PRODUCT, 
-            artifact={
-                'subtitle': generator.export()
-            },
-            attachments=[
-                {
-                    'name': 'instrumental',
-                    'artifact_type': ArtifactType.AUDIO,
-                    'artifact': instrumental_path
-                }
-            ]
+            name="Subtitle",
+            tag='subtitles',
+            artifact_type=ArtifactType.JSON, 
+            artifact=generator.export(),
+            is_attached=True
         )
         self.update(message="Subtitle generation completed")
         

@@ -34,10 +34,14 @@ class IdentifyMusicExecution(Execution):
         self.passing_args['title'] = title
         self.passing_args['artist'] = artist
         
-        self.add_artifact('Detected result', ArtifactType.JSON, {
-            'title': self.passing_args['title'],
-            'artist': self.passing_args['artist'],
-        })
+        self.add_artifact(
+            name='Detected result', 
+            artifact_type=ArtifactType.JSON,
+            artifact={
+                'title': self.passing_args['title'],
+                'artist': self.passing_args['artist'],
+            }
+        )
         self.update(message="Music identification successful")
 
 class IdentifyMusic(Task):

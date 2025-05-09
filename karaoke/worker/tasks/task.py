@@ -127,13 +127,15 @@ class Task(BaseTask):
 
     def add_artifact(
         self, name: str, artifact_type: ArtifactType, 
-        artifact: str | dict, is_attached: bool = False, 
+        artifact: str | dict, 
+        tag: str | None = None,
+        is_attached: bool = False, 
         attachments: list[dict] | None=None
     ) -> int:
         """
         Add an artifact to the task.
         """
-        if artifact_type in (ArtifactType.JSON, ArtifactType.SEGMENTS, ArtifactType.PRODUCT):
+        if artifact_type in (ArtifactType.JSON, ArtifactType.SEGMENTS):
             if attachments is not None:
                 for attachment in attachments:
                     aid = self.add_artifact(**attachment, is_attached=True)
@@ -144,17 +146,14 @@ class Task(BaseTask):
         else:
             artifact = sentinize_path(artifact, self.config.media_path)
         
-        aid = self.job.add_artifact(artifact_type, artifact)
-        if artifact_type == ArtifactType.PRODUCT:
-            self.job.update(result_artifact_index=aid)
-        else:
-            self.artifacts.append(Artifact(aid=aid, artifact_type=artifact_type, name=name, is_attached=is_attached))
-            self.job.update(tasks={
-                self.tid: {
-                    'artifacts': [a.serialize() for a in self.artifacts]
-                }
-            })
-            self.update(artifacts=[a.serialize() for a in self.artifacts])
+        aid = self.job.add_artifact(artifact_type, artifact, tag)
+        self.artifacts.append(Artifact(aid=aid, artifact_type=artifact_type, name=name, is_attached=is_attached))
+        self.job.update(tasks={
+            self.tid: {
+                'artifacts': [a.serialize() for a in self.artifacts]
+            }
+        })
+        self.update(artifacts=[a.serialize() for a in self.artifacts])
         return aid
 
     def done(self) -> None:

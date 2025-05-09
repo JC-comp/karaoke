@@ -79,13 +79,8 @@ class Execution:
     def passive_update(self, **kwargs) -> None:
         self.task.passive_update(**kwargs)
 
-    def add_artifact(
-        self, 
-        name: str, artifact_type: ArtifactType, 
-        artifact: str | dict,
-        attachments: dict | None = None
-    ) -> None:
-        self.task.add_artifact(name=name, artifact_type=artifact_type, artifact=artifact, attachments=attachments)
+    def add_artifact(self,  **kwargs) -> None:
+        self.task.add_artifact(**kwargs)
 
     def _start(self, args: dict) -> None:
         raise NotImplementedError("You must implement the _start method")

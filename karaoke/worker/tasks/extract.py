@@ -24,7 +24,11 @@ class ExtractAudioExecution(Execution):
         self._start_external_command(cmd)
         self.passing_args['source_path'] = source_path
         self.passing_args['audio_path'] = audio_path
-        self.add_artifact('Original Audio', ArtifactType.AUDIO, audio_path)
+        self.add_artifact(
+            name='Original Audio',
+            artifact_type=ArtifactType.AUDIO, 
+            artifact=audio_path
+        )
 
         self.update(message="Audio extraction completed")
         

@@ -42,7 +42,11 @@ class FetchLyricsExecution(Execution):
         Set the result of the lyrics retrieval task.
         """
         self.passing_args['lyrics_cache_path'] = lyrics_cache_path
-        self.add_artifact('Lyrics found', ArtifactType.TEXT, self.passing_args['lyrics'])
+        self.add_artifact(
+            name='Lyrics found',
+            artifact_type=ArtifactType.TEXT,
+            artifact=self.passing_args['lyrics']
+        )
 
     def _start(self, args: dict) -> None:
         """

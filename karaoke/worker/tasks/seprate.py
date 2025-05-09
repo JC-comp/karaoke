@@ -31,7 +31,12 @@ class SeperateAudioExecution(Execution):
         Set the result of the separation task.
         """
         self.passing_args[self.passing_key + '_only'] = audio_path
-        self.add_artifact(f'Separated {self.passing_key}', ArtifactType.AUDIO, audio_path)
+        self.add_artifact(
+            name=f'Separated {self.passing_key}',
+            tag=self.passing_key,
+            artifact_type=ArtifactType.AUDIO,
+            artifact=audio_path
+        )
 
     def _external_long_running_task(self, args) -> None:
         """
