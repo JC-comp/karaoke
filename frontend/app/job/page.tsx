@@ -185,9 +185,12 @@ const JobProcessPage = () => {
                   <strong>Status:</strong> {getStatusIcon(jobInfo.status)} {capitalizeFirstLetter(jobInfo.status)}
                 </li>
                 {
-                  jobInfo.result_artifact_index >= 0 && (
-                    <ProductPreview jobInfo={jobInfo} />
-                  )
+                  <li className="list-group-item">
+                    <strong>Result:</strong>
+                    <div className="position-relative">
+                      <ProductPreview jobInfo={jobInfo} />
+                    </div>
+                  </li>
                 }
               </ul>
             </div>

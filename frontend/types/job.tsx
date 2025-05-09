@@ -23,6 +23,7 @@ interface JobInfo {
   status: JobStatus;
   message: string;
   isProcessExited: boolean;
-  result_artifact_index: number;
   tasks: { [key: string]: Task };
+  artifact_tags: Record<string, number>;
+  isRunning: () => boolean;
 }

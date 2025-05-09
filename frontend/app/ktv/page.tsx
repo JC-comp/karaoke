@@ -99,7 +99,7 @@ export default function KTVRoom() {
         {isPlaylistOpen ? '✕' : '☰'}
       </button>
     </div>
-    <div className={`${styles['room-info']} ${isPlaylistOpen ? '' : 'd-none'}`}>
+    <div className={`${styles['room-info']}`}>
       <KareokeRoom kareokeRoomModel={kareokeRoomModel} setKareokeRoomModel={setKareokeRoomModel} roomID={roomID} setRoomID={setRoomID} version={version} setVersion={setVersion} />
     </div>
   </div>

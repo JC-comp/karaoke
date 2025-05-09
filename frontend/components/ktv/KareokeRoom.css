@@ -98,7 +98,7 @@
         position: fixed;
         padding: 0;
         background-color: var(--bs-body-bg);
-        z-index: 1;
+        z-index: 100;
         align-self: end;
         right: calc(var(--fab-padding) + var(--fab-size));
         bottom: calc(var(--fab-padding) + var(--fab-size));

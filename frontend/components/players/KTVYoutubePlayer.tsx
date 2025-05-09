@@ -79,15 +79,20 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
             if (x)
                 result.right = ((1 - (x || 0)) * width) + 'px';
         }
+        
+        let marginBottom = 0;
+        if (height > width) {
+            marginBottom = height / 4;
+        }
 
         if (alignY === 'top') {
             if (y)
-                result.top = ((y || 0) * width) + 'px';
+                result.top = ((y || 0) * width - marginBottom) + 'px';
         } else if (alignY === 'bottom') {
             if (y)
-                result.bottom = ((y || 0) * width) + 'px';
+                result.bottom = ((y || 0) * width + marginBottom) + 'px';
         } else if (alignY === 'center') {
-            result.top = ((height - (bottom || 0) * width) / 2 + (y || 0) * width) + 'px';
+            result.top = ((height - (bottom || 0) * width) / 2 + (y || 0) * width - marginBottom) + 'px';
         }
         return result;
     }

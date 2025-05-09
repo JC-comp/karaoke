@@ -52,9 +52,10 @@ export default function ScheduleEmbbedPlayer({ kareokeRoomModel, jobId }: { kare
 
     useEffect(() => {
         if (!jobInfo) return;
-        if (jobInfo.result_artifact_index < 0) return;
-        const url = `/api/artifact/${jobInfo.jid}/${jobInfo.result_artifact_index}`;
-        setResultUrl(url);
+        // TODO: move to artifact tag
+        // if (jobInfo.result_artifact_index < 0) return;
+        // const url = `/api/artifact/${jobInfo.jid}/${jobInfo.result_artifact_index}`;
+        // setResultUrl(url);
     }, [jobInfo]);
 
 

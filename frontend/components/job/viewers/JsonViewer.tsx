@@ -21,7 +21,7 @@ export default function JsonViewer({ url, setIsLoading, setError }: { url: strin
                 <tr key={key}>
                   <td className="text-truncate">{key}</td>
                   <td className="text-truncate">
-                    {value}
+                    {JSON.stringify(value)}
                   </td>
                 </tr>
               ))

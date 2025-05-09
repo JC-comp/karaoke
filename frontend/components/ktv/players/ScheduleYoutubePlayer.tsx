@@ -18,14 +18,40 @@ interface ScheduleYoutubePlayerProps {
     onStateChange?: (player: YT.Player) => void;
 }
 
+const initialSubtitle: Subtitle = {
+    start: 0,
+    end: 60 * 15,
+    alignX: "center",
+    alignY: "bottom",
+    y: 0.9 / 15 * 0.33,
+    font_size: 0.9 / 15,
+    words: [
+        {
+            start: 0,
+            end: 0,
+            word: "Generating lyrics...",
+        }
+    ]
+}
+
+const failedSubtitle: Subtitle = {
+    ...initialSubtitle,
+    words: [
+        {
+            start: 0,
+            end: 0,
+            word: "Failed to generate lyrics",
+        }
+    ]
+}
+
 export default function ScheduleYoutubePlayer({ jobId, shouldPlay, onPlayerReady, onPlayerStateChange, onStateChange }: ScheduleYoutubePlayerProps) {
-    const playerRef = useRef<HTMLVideoElement | null>(null);
     const [jobInfo, setJobInfo] = useState<JobInfo | null>(null);
-    const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [subtitleUrl, setSubtitleUrl] = useState<string | null>(null);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
-    const [subtitles, setSubtitles] = useState<Subtitle[]>([]);
+    const [subtitles, setSubtitles] = useState<Subtitle[]>([initialSubtitle]);
     const [failedMessage, setFailedMessage] = useState<string | null>(null);
-    const rawData = useFetchArtifact(resultUrl, setFailedMessage);
+    const rawSubtitle = useFetchArtifact(subtitleUrl, setFailedMessage);
     const videoId = jobInfo ? new URL(jobInfo.media.source).searchParams.get("v") : null;
 
     useEffect(() => {
@@ -55,20 +81,26 @@ export default function ScheduleYoutubePlayer({ jobId, shouldPlay, onPlayerReady
     useEffect(() => {
         if (!jobInfo) return;
         if (!videoId) setFailedMessage("Invalid video ID");
-        if (jobInfo.result_artifact_index < 0) return;
-        const url = `/api/artifact/${jobInfo.jid}/${jobInfo.result_artifact_index}`;
-        setResultUrl(url);
+
+        if (jobInfo.artifact_tags.Instrumental) {
+            setAudioUrl(`/api/artifact/${jobInfo.jid}/${jobInfo.artifact_tags.Instrumental}`);
+        } else if (!jobInfo.isRunning()) {
+            setFailedMessage('Conversion failed')
+        }
+        if (jobInfo.artifact_tags.subtitles) {
+            const url = `/api/artifact/${jobInfo.jid}/${jobInfo.artifact_tags.subtitles}`;
+            setSubtitleUrl(url);
+        } else if (!jobInfo.isRunning()) {
+            setSubtitles([failedSubtitle]);
+        }
     }, [jobInfo]);
 
 
     useEffect(() => {
-        if (!rawData) return;
-        if (!jobInfo) return;
-
-        const data = JSON.parse(rawData)
-        setAudioUrl(`/api/artifact/${jobInfo.jid}/${data.instrumental}`);
-        setSubtitles(data.subtitle);
-    }, [rawData]);
+        if (!rawSubtitle) return;
+        const data = JSON.parse(rawSubtitle)
+        setSubtitles(data);
+    }, [rawSubtitle]);
 
     const jobLink = jobId ? <p className="mt-3">Job ID: <Link className="text-decoration-none" href={`/job?jobId=${jobId}`} target="_blank">{jobId}</Link></p> : null;
 
@@ -91,10 +123,10 @@ export default function ScheduleYoutubePlayer({ jobId, shouldPlay, onPlayerReady
 
     if (!audioUrl) {
         // if the job is finished successfully and the product URL is still loading
-        if (resultUrl) {
+        if (subtitleUrl) {
             return <div className="d-flex justify-content-center align-items-center flex-column p-2">
                 <FontAwesomeIcon icon={faSpinner} spin size="3x" />
-                <h3 className="p-3">Loading Video...</h3>
+                <h3 className="p-3">Loading Subtitles...</h3>
                 {jobLink}
             </div>
         }
