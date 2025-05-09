@@ -19,7 +19,6 @@ class ArtifactType(str, enum.Enum):
     JSON = 'json'
     TEXT = 'text'
     SEGMENTS = 'segments'
-    PRODUCT = 'product'
 
 class Artifact:
     def __init__(self, aid: int, name: str, artifact_type: ArtifactType, is_attached: bool):
