@@ -94,6 +94,9 @@ class Execution:
 
     def run(self, args: dict) -> None:
         self.args_queue.put(args)
+    
+    def cancel(self) -> None:
+        self.args_queue.put(None)
 
     def start(self, task: ExecuteTask, logger: logging.Logger, args: dict = None, handler_args: list[multiprocessing.Queue, int] = None) -> None:
         self.task = task
@@ -129,7 +132,7 @@ class Execution:
         self.logger.info(f"----- {self.name} completed -----\n")
     
     def stop(self) -> None:
-        self.args_queue.put(None)
+        self.cancel()
 
     def _external_buffer_wrapper(self, target, args) -> None:
         """

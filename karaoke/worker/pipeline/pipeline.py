@@ -13,6 +13,7 @@ class Pipeline:
         self.job = job
         self.tasks: list[Task] = self.build_pipeline()
         self.runners = {}
+        self.runner_threads: list[threading.Thread] = []
         self.logger = get_logger(__name__, Config().log_level)
         self.operation_lock = threading.Condition()
 
@@ -46,8 +47,10 @@ class Pipeline:
         for task in self.tasks:
             if task.name not in self.runners:
                 runner = ProcessRunner(task)
-                threading.Thread(target=self.run_task, args=(runner,)).start()
+                t = threading.Thread(target=self.run_task, args=(runner,))
+                t.start()
                 self.runners[task.name] = runner
+                self.runner_threads.append(t)
 
     def post_start(self) -> None:
         """
@@ -56,7 +59,7 @@ class Pipeline:
         for runner in self.runners.values():
             runner.stop()
 
-    def start(self) -> None:
+    def _start(self) -> None:
         """
         Starts the pipeline execution according to the task dependencies.
         """
@@ -114,12 +117,27 @@ class Pipeline:
                 if task.is_prerequisite_fulfilled():
                     if task.is_pending():
                         task.update(status=TaskStatus.QUEUED)
+                        task.run()
                     else:
                         self.logger.info(f"Task {task.name} not in pending state: {task.status}")
-                    task.run()
                 else:
+                    task.cancel()
                     self.logger.info(f"Task {task.name} failed due to incomplete prerequisites.")
         
-        self.post_start()
         self.job.done()
         self.logger.info('Pipeline execution completed.')
+    
+    def start(self) -> None:
+        """
+        Starts the pipeline execution.
+        """
+        try:
+            self._start()
+        except Exception as e:
+            self.logger.error(f"Pipeline execution failed: {e}", exc_info=True)
+        
+        self.post_start()
+        self.logger.info('Waiting for all threads to complete...')
+        for thread in self.runner_threads:
+            thread.join()
+        self.logger.info('All threads have completed.')

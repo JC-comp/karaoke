@@ -89,6 +89,12 @@ class Task(BaseTask):
         args = self.get_running_args()
         self.passive_update(message="Waiting for preloading to complete")
         self.execution.run(args)
+    
+    def cancel(self) -> None:
+        """
+        Cancels the task.
+        """
+        self.execution.cancel()
 
     def set_passing_args(self, args: dict[str, any]) -> None:
         """
