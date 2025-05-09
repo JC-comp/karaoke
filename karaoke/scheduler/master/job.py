@@ -13,7 +13,8 @@ class CacheJob(BaseJob):
     def __init__(self, jid: str, created_at: float, started_at: float, finished_at: float,
         job_type: str, media: dict[str, str], status: str, message: str, 
         isProcessExited: bool, last_update: float, 
-        tasks: dict[dict], result_artifact_index: int, artifacts: list
+        artifact_tags: dict[str, int], 
+        tasks: dict[dict], artifacts: list
     ):
         """
         Initializes a job loaded from the cache.
@@ -22,7 +23,8 @@ class CacheJob(BaseJob):
             jid=jid, created_at=created_at, started_at=started_at, finished_at=finished_at,
             job_type=job_type, media=media, status=status, message=message, 
             isProcessExited=isProcessExited, last_update=last_update,
-            tasks=tasks, result_artifact_index=result_artifact_index, artifacts=artifacts
+            artifact_tags=artifact_tags,
+            tasks=tasks, artifacts=artifacts
         )
         self.process: Process = None
         self.listeners: list[Client] = []
@@ -185,5 +187,6 @@ class Job(CacheJob):
             job_type=job_type, media=media,
             status=JobStatus.PENDING, message='Waiting for scheduler...', isProcessExited=False, 
             last_update=time.time(), 
-            tasks={}, result_artifact_index=-1, artifacts=None
+            artifact_tags={},
+            tasks={}, artifacts=None
         )
