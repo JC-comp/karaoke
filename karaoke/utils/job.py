@@ -116,7 +116,7 @@ class BaseJob:
             aid = len(self.artifacts) - 1
             if tag is not None:
                 self.artifact_tags[tag] = aid
-        self.update(artifacts=self.artifacts)
+        self.update(artifacts=self.artifacts, artifact_tags=self.artifact_tags)
         return aid
     
     def get_artifact(self, index: int) -> list[ArtifactType, str] | None:
