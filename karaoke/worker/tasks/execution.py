@@ -111,13 +111,13 @@ class Execution:
             has_preloaded = self._external_buffer_wrapper(self._execute_external_long_running_task_wrapper, (self._preload, None))
             if args is None:
                 self.logger.info(f"Task {self.name} waiting for arguments to be queued")
-                if has_preloaded:
+                if has_preloaded and self.args_queue.empty():
                     self.passive_update(message="Preloading completed, waiting for prerequisites")
                 args = self.args_queue.get()
-            self.update(status=TaskStatus.RUNNING)
             if args is None:
                 self.logger.info(f"Task {self.name} stopped without getting arguments")
             else:
+                self.update(status=TaskStatus.RUNNING)
                 self.logger.debug(f"Arguments: {args}")
                 self._start(args)
                 self.update(status=TaskStatus.COMPLETED)

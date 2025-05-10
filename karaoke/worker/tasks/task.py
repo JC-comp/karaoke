@@ -130,9 +130,12 @@ class Task(BaseTask):
         Updates the task attributes without logging what changes are made.
         This is used when the changes are already logged somewhere else.
         """
-        if self.status == TaskStatus.INTERRUPTING:
+        if self.is_interrupting():
             if 'status' in kwargs:
                 kwargs['status'] = TaskStatus.INTERRUPTING
+        if not self.is_running() and not self.is_pending():
+            if 'message' in kwargs:
+                del kwargs['message']
         super().update(**kwargs)
         self.job.update(tasks={
             self.tid: kwargs
@@ -181,4 +184,5 @@ class Task(BaseTask):
         Cleans up the task.
         """
         super().done()
+        self.update(status=self.status, message=self.message)
         self.logger.handlers.clear()
