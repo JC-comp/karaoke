@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import WavesurferPlayer from '@wavesurfer/react'
 import { type GenericPlugin } from 'wavesurfer.js/dist/base-plugin.js';
 import WaveSurfer from "wavesurfer.js";
 import ZoomPlugin from "wavesurfer.js/dist/plugins/zoom";
+import CachedWavesurferPlayer from "./CachedWavesurferPlayer";
 import OverlapRegionsPlugin from "./SegmentViewerRegionPlugin";
 import { useFetchArtifact } from "@/utils/artifact";
 
@@ -19,7 +19,7 @@ interface Segment {
   word: string;
 }
 
-export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { url: string, jobId: string, setIsLoading: (loading: boolean) => void, setError: (error: string) => void }) {
+export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { url: string, jobId: string, setIsLoading: (loading: boolean) => void, setError: (error: string | null) => void }) {
   const rawData = useFetchArtifact(url, setError);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -78,15 +78,14 @@ export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { 
     })
   }
 
-  return audioUrl && <div>
+  return <div>
     <div>
-      <WavesurferPlayer
+      <CachedWavesurferPlayer
         url={audioUrl}
-        mediaControls
         plugins={plugins}
         onDecode={addRegion}
-        onReady={() => setIsLoading(false)}
-        onError={() => setError('Failed to load audio')}
+        setIsLoading={setIsLoading}
+        setError={setError}
       />
     </div>
   </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimesCircle, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import WavesurferPlayer from '@wavesurfer/react'
+import CachedWavesurferPlayer from "./viewers/CachedWavesurferPlayer";
 import ZoomPlugin from "wavesurfer.js/dist/plugins/zoom";
 
 import { JsonViewer, PlainViewer, SegmentViewer } from './viewers';
@@ -18,12 +18,11 @@ function ArtifactComponent( { artifact, jobId, setIsLoading, setError }: { artif
         Your browser does not support the video tag.
       </video>
     case 'audio':
-      return <div><WavesurferPlayer
+      return <div><CachedWavesurferPlayer
         url={url}
-        mediaControls
         plugins={[ZoomPlugin.create({ scale: 0.01 })]}
-        onReady={() => setIsLoading(false)}
-        onError={() => setError('Failed to load audio')}
+        setIsLoading={setIsLoading}
+        setError={setError}
       /></div>
     case 'json':
       return <JsonViewer url={url} setIsLoading={setIsLoading} setError={setError} />
@@ -67,8 +66,8 @@ function Artifact({ artifact, jobId }: { artifact: Artifact; jobId: string }) {
 
 export default function ArtifactDetails({ task, jobId }: { task: Task; jobId: string }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-
-  return <details className="log-details" onToggle={() => setDetailsOpen(!detailsOpen)}>
+  const detailRef = React.createRef<HTMLDetailsElement>();
+  return <details ref={detailRef} className="log-details" onToggle={() => setDetailsOpen(detailRef.current?.open || false)}>
     <summary className="rounded">Task Artifacts</summary>
     {
       detailsOpen && <table className="table table-striped table-hover artifact-table">
