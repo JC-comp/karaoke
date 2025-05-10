@@ -486,7 +486,7 @@ class RegionsPlugin extends BasePlugin<RegionsPluginEvents, RegionsPluginOptions
         // Check if the regions are overlapping upon redraw
         if (this.onZoomTimeout) {
           clearTimeout(this.onZoomTimeout)
-      }
+        }
         this.onZoomTimeout = setTimeout(() => {
           const displayedRegions = this.regions.filter(
             (region) => region.element.parentElement && region.content
@@ -521,8 +521,8 @@ class RegionsPlugin extends BasePlugin<RegionsPluginEvents, RegionsPluginOptions
     return this.regions
   }
 
-  private avoidOverlapping(region: Region) {
-    if (!region.content) return
+  private avoidOverlapping(region: Region, retry = 0) {
+    if (!region.content) return;
 
     setTimeout(() => {
       // If the region is not rendered, skip the check
@@ -548,13 +548,18 @@ class RegionsPlugin extends BasePlugin<RegionsPluginEvents, RegionsPluginOptions
       const div = region.content as HTMLElement
       const box = div.getBoundingClientRect()
 
+      if (retry > 10) {
+        div.dataset.computed = 'true'
+        return;
+      }
+
       const displaying = this.regions
         .filter((reg) => reg !== region && reg.element?.parentElement && reg.content)
 
       const preceding = displaying
-        .filter((reg) => reg !== region && reg.start <= region.start);
+        .filter((reg) => reg !== region && (reg.start < region.start || (reg.start == region.start && reg.id < region.id)));
       const following = displaying
-        .filter((reg) => reg !== region && reg.start > region.start);
+        .filter((reg) => reg !== region && (reg.start > region.start || (reg.start == region.start && reg.id > region.id)));
 
       const target_direction = preceding.length ? preceding : following;
 
@@ -568,9 +573,8 @@ class RegionsPlugin extends BasePlugin<RegionsPluginEvents, RegionsPluginOptions
       if (preceding.length === 0 && !ready) {
         ready = true
       }
-
       if (!ready) {
-        setTimeout(() => this.avoidOverlapping(region), 10)
+        setTimeout(() => this.avoidOverlapping(region, retry + 1), 10)
         return
       }
 
