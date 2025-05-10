@@ -26,20 +26,34 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
         if (onPlayerReady) onPlayerReady(event);
     }
 
+    function playAudio() {
+        const audio = audioRef.current;
+        if (!audio) return;
+        audio.play().then(() => {
+            videoRef.current?.mute();
+        }).catch((error) => {
+            if (error.name === 'NotAllowedError') {
+
+            }
+        });
+    }
+
     function onKTVPlayerStateChange(event: YT.OnStateChangeEvent) {
         if (onPlayerStateChange) onPlayerStateChange(event);
         const audio = audioRef.current;
         if (!audio) return;
         if (event.data === YT.PlayerState.PLAYING) {
-            audio.play().then(() => {
-                videoRef.current?.mute();
-            }).catch((error) => {
-                if (error.name === 'NotAllowedError') {
-                    
-                }
-            });
+            playAudio();
         } else if (event.data === YT.PlayerState.PAUSED) {
             audio.pause();
+        }
+    }
+
+    function onAudioLoadedData() {
+        const player = videoRef.current;
+        if (!player) return;
+        if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+            playAudio();
         }
     }
 
@@ -67,7 +81,7 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
         const { font_size, x, y, alignX, alignY, bottom } = args;
         var result = {} as Record<string, string>;
         if (font_size) {
-            result.fontSize = (font_size * width) + 'px';
+            result.fontSize = (font_size * width / 1.5) + 'px';
         }
         if (alignX === 'center') {
             result.left = '50%';
@@ -79,7 +93,7 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
             if (x)
                 result.right = ((1 - (x || 0)) * width) + 'px';
         }
-        
+
         let marginBottom = 0;
         if (height > width) {
             marginBottom = height / 4;
@@ -161,6 +175,7 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
         <div ref={containerRef} className="ktv-player">
             {
                 audioUrl && <audio
+                    onLoadedData={onAudioLoadedData}
                     ref={audioRef} className="d-none" controls src={audioUrl}
                 />
             }
@@ -193,7 +208,7 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
                                     data-end={word.end}
                                 >
                                     <span className="bg">{word.word}</span>
-                                    <span className="fg" style={{width: 0}}>{word.word}</span>
+                                    <span className="fg" style={{ width: 0 }}>{word.word}</span>
                                 </div>
                             )
                         }

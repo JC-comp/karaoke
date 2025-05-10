@@ -11,13 +11,11 @@
     display: inline;
     background: rgba(0, 0, 0, 0.7);
     border-radius: 5px;
-    line-height: 1;
     user-select: none;
 }
 
 .subtitle * {
     display: inline-block;
-    line-height: 1;
 }
 
 .subtitle span {
@@ -45,7 +43,6 @@
     -webkit-text-stroke: 1px white;
     top: 0;
     left: 0;
-    overflow-x: hidden;
+    overflow: hidden;
     transition: width 0.5s;
-    height: 100vh;
 }
