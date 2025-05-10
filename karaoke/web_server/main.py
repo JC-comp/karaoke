@@ -50,6 +50,22 @@ def success_response(response: Response) -> tuple:
 
     return response
 
+@app.route('/', methods=['GET'])
+def index() -> Response:
+    """
+    Serve the index.html file.
+    """
+    return app.send_static_file('index.html')
+
+@app.route('/<path>', methods=['GET'])
+def static_proxy(path: str) -> Response:
+    """
+    Serve static files from the static folder.
+    """
+    if os.path.exists(os.path.join(app.static_folder, path + '.html')):
+        return app.send_static_file(path + '.html')
+    return app.send_static_file(path)
+
 def run_web():
     app.static_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
     socketio = SocketIO(app, path=config.socketio_path, cors_allowed_origins="*", async_mode='threading')
@@ -70,4 +86,11 @@ def run_artifact():
     return app
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5328)
+    parser = argparse.ArgumentParser(description='Run the web server.')
+    parser.add_argument('--artifact', action='store_true', help='Run the artifact server.')
+    args = parser.parse_args()
+    if args.artifact:
+        app = run_artifact()
+    else:
+        app = run_web()
+    app.run()
