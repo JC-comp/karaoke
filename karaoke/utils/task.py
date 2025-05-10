@@ -75,6 +75,12 @@ class BaseTask:
         """
         return self.status in (TaskStatus.COMPLETED, TaskStatus.SKIPPED, TaskStatus.SOFT_FAILED)
     
+    def is_interrupting(self) -> bool:
+        """
+        Checks if the task is in the process of being interrupted.
+        """
+        return self.status == TaskStatus.INTERRUPTING
+
     def is_interrupted(self) -> bool:
         """
         Checks if the task has been interrupted.

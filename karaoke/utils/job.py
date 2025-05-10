@@ -21,6 +21,13 @@ class JobStatus(str, enum.Enum):
     FAILED = "failed"
     CANCELED = "canceled"
 
+class JobAction(str, enum.Enum):
+    START = "start"
+    PAUSE = "pause"
+    STOP = "stop"
+    RESTART = "restart"
+    DELETE = "delete"
+
 class Media:
     def __init__(self, source: str, metadata: dict[str, str]):
         self.source = source
