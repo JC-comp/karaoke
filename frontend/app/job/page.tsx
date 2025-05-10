@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 
 import ArtifactDetails from '@/components/job/ArtifactDetails';
 import ProductPreview from '@/components/job/ProductPreview';
+import JobActionController from '@/components/job/JobActionController';
 import { JobInfo } from '@/models/job';
 import connectSocketIO from "@/utils/socketio";
 import { getStatusColor, getStatusIcon } from '@/utils/icon';
@@ -21,8 +22,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import '@/components/job/ProductPreview.css';
 import '@/components/job/ArtifactDetails.css';
 import '@/components/players/KTVYoutubePlayer.css';
-
-
 
 function usePrevious(value: JobInfo | null) {
   const ref = useRef<JobInfo | null>(null);
@@ -183,6 +182,10 @@ const JobProcessPage = () => {
                 }
                 <li className="list-group-item">
                   <strong>Status:</strong> {getStatusIcon(jobInfo.status)} {capitalizeFirstLetter(jobInfo.status)}
+                </li>
+                <li className="list-group-item">
+                  <strong>Action:</strong>
+                  <JobActionController jobInfo={jobInfo} />
                 </li>
                 {
                   <li className="list-group-item">
