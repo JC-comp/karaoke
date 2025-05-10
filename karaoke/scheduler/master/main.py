@@ -7,13 +7,14 @@ from .job import Job, CacheJob
 from .slave.manager import SlaveManager
 from ...utils.connection import Connection as Client
 from ...utils.config import get_logger, Config
-from ...utils.job import JobStatus
+from ...utils.job import JobStatus, JobAction
 
 class Scheduler:
     def __init__(self, config: Config) -> None:
         self.config = config
         self.logger = get_logger(__name__, config.log_level)
         self.job_list: dict[str, CacheJob] = self.load_job_list()
+        self.worker_map: dict[str, Client] = {}
         self.client_list: list[Client] = []
         self.slave_manager = SlaveManager(config)
         self.process_lock = threading.Lock()
@@ -174,7 +175,35 @@ class Scheduler:
             'artifact_type': artifact[0],
             'artifact': artifact[1]
         }))
-        
+
+    def handle_job_action(self, client: Client, jobId: str, jobAction: str) -> None:
+        """
+        Handle job action from client.
+        """
+        worker = self.worker_map.get(jobId)
+        if worker is None:
+            client.log(self.logger.error, f"Worker for job {jobId} not found")
+            client.error('Worker not found')
+            return
+        try:
+            action = JobAction(jobAction)
+        except:
+            client.log(self.logger.error, f"Invalid job action {jobAction}")
+            client.error('Invalid job action')
+            return
+        try:
+            worker.send(json.dumps({
+                'action': action.value
+            }))
+            client.send(json.dumps({
+                'status': 'ok'
+            }))
+        except Exception as e:
+            client.log(self.logger.error, f"Error sending job action to worker: {e}")
+            client.error('Error sending job action to worker')
+            return
+
+
     def handle_user(self, client: Client, client_info: dict) -> None:
         """
         Handle a user client connection.
@@ -193,6 +222,10 @@ class Scheduler:
             jobId = client_info.get('jobId')
             artifact = int(client_info.get('artifact'))
             self.handle_artifact(client, jobId, artifact)
+        elif action == 'jobAction':
+            jobId = client_info.get('jobId')
+            jobAction = client_info.get('jobAction')
+            self.handle_job_action(client, jobId, jobAction)
         else:
             self.logger.warning(f"Unknown action from client: {action}")
             client.error('Unknown action: ' + str(action))
@@ -210,14 +243,19 @@ class Scheduler:
             return
         client.log(self.logger.debug, f"Found jobId = {jobId}, sending job info")
         client.send(json.dumps(self.job_list[jobId].serialize()))
-
-        while True:
-            progress = client.json_idle()
-            if 'bye' in progress:
-                client.log(self.logger.info, "Worker sent bye")
-                break
-            client.log(self.logger.debug, "Received progress update")
-            self.job_list[jobId].update(**progress)
+        self.worker_map[jobId] = client
+        try:
+            while True:
+                progress = client.json_idle()
+                if 'bye' in progress:
+                    client.log(self.logger.info, "Worker sent bye")
+                    break
+                client.log(self.logger.debug, "Received progress update")
+                self.job_list[jobId].update(**progress)
+        except Exception as e:
+            raise e
+        finally:
+            del self.worker_map[jobId]
     
     def handle_slave(self, client: Client, client_info: dict) -> None:
         """
