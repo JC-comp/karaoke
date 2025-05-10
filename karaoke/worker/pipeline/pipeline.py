@@ -2,7 +2,7 @@ import queue
 import threading
 
 from ..tasks.runner import ProcessRunner
-from ..job import RemoteJob
+from ..job import RemoteJob, JobAction
 from ..tasks.task import Task, TaskStatus
 from ...utils.config import Config, get_logger
 from ...utils.job import JobStatus
@@ -32,11 +32,14 @@ class Pipeline:
         self.logger.info(f"Starting task: {task.name}")
         try:
             runner.start()
-            task.done()
         except Exception as e:
             task.update(status=TaskStatus.FAILED, message=str(e))
             self.logger.error(f'Task failed: {task.name}', exc_info=True)
         finally:
+            try:
+                task.done()
+            except Exception as e:
+                self.logger.error(f'Task done failed: {task.name}', exc_info=True)
             with self.operation_lock:
                 self.operation_lock.notify_all()
     
@@ -58,6 +61,14 @@ class Pipeline:
         """
         for runner in self.runners.values():
             runner.stop()
+
+    def check_job_action(self) -> None:
+        action = self.job.get_action()
+        if action == JobAction.STOP:
+            self.logger.info('Stopping job execution...')
+            for task in self.tasks:
+                task.interrupt()
+            self.job.update(status=JobStatus.INTERRUPTING)
 
     def _start(self) -> None:
         """
@@ -93,6 +104,8 @@ class Pipeline:
                         if prerequisite_count[subtask.name] == 0:
                             pending.put(subtask)
 
+                self.check_job_action()
+
                 self.logger.info(f'pending task: {pending.qsize()}')
                 self.logger.info(f'running tasks: {len(running_tasks)}')
                 # Waiting for running tasks to finish if there are no pending tasks
@@ -123,9 +136,6 @@ class Pipeline:
                 else:
                     task.cancel()
                     self.logger.info(f"Task {task.name} failed due to incomplete prerequisites.")
-        
-        self.job.done()
-        self.logger.info('Pipeline execution completed.')
     
     def start(self) -> None:
         """
@@ -141,3 +151,6 @@ class Pipeline:
         for thread in self.runner_threads:
             thread.join()
         self.logger.info('All threads have completed.')
+
+        self.job.done()
+        self.logger.info('Pipeline execution completed.')

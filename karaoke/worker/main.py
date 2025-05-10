@@ -22,9 +22,14 @@ if __name__ == "__main__":
         
     binder.bind()
     job = binder.get_job_info()
-    if job.job_type == JobType.YOUTUBE:
-        pipeline = YoutubePipeline(job)
-    else:
-        raise ValueError(f'Unsupported job type: {job.job_type}')
+    binder.listen()
+    try:
+        if job.job_type == JobType.YOUTUBE:
+            pipeline = YoutubePipeline(job)
+        else:
+            raise ValueError(f'Unsupported job type: {job.job_type}')
 
-    pipeline.start()
+        pipeline.start()
+    except Exception as e:
+        binder.close()
+        raise e

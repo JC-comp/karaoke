@@ -4,7 +4,8 @@ import multiprocessing
 
 from .base import ExecuteTask, ExecuteJob
 from .task import Task
-from ...utils.task import ArtifactType, TaskStatus
+from ...utils.task import TaskStatus
+from ...utils.job import JobAction
 
 class SyncJob(ExecuteJob):
     def __init__(self, message_queue: multiprocessing.Queue) -> None:
@@ -44,6 +45,7 @@ class ProcessRunner:
     def __init__(self, task: Task) -> None:
         self.task = task
         self.message_queue = multiprocessing.Queue()
+        self.action_queue = multiprocessing.Queue()
 
     def start_capturing(self) -> None:
         """
@@ -53,6 +55,8 @@ class ProcessRunner:
             message = self.message_queue.get()
             if message is None:
                 break
+            if self.task.is_interrupting():
+                self.action_queue.put(JobAction.STOP)
             if message['target'] == 'job':
                 self.task.job.update(**message['body'])
             elif message['target'] == 'passive_update':
@@ -75,7 +79,6 @@ class ProcessRunner:
             else:
                 self.task.logger.warning(f"Unknown message target: {message['target']}")
 
-
     def start(self) -> None:
         """
         Starts the task execution in a separate process and wait for arguments to be passed.
@@ -96,7 +99,7 @@ class ProcessRunner:
             target=self.task.execution.start, 
             args=(sync_task, logger),
             kwargs={
-                'handler_args': [self.message_queue, self.task.logger.level],
+                'handler_args': [self.message_queue, self.action_queue, self.task.logger.level],
             }
         )
 

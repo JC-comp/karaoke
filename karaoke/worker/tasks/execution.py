@@ -98,16 +98,16 @@ class Execution:
     def cancel(self) -> None:
         self.args_queue.put(None)
 
-    def start(self, task: ExecuteTask, logger: logging.Logger, args: dict = None, handler_args: list[multiprocessing.Queue, int] = None) -> None:
+    def start(self, task: ExecuteTask, logger: logging.Logger, args: dict = None, handler_args: list[multiprocessing.Queue, multiprocessing.Queue, int] = None) -> None:
         self.task = task
         self.logger = logger
         if handler_args: 
-            message_queue, level = handler_args
-            handler = SyncHandler(message_queue)
+            message_queue, action_queue, level = handler_args
+            handler = SyncHandler(message_queue, action_queue)
             logger.setLevel(level)
             logger.addHandler(handler)
-        self.logger.info(f"----- {self.name} -----\n")
         try:
+            self.logger.info(f"----- {self.name} -----\n")
             has_preloaded = self._external_buffer_wrapper(self._execute_external_long_running_task_wrapper, (self._preload, None))
             if args is None:
                 self.logger.info(f"Task {self.name} waiting for arguments to be queued")
@@ -123,13 +123,13 @@ class Execution:
                 self.update(status=TaskStatus.COMPLETED)
                 self.set_passing_args(self.passing_args)
         except SoftFailure as e:
-            self.logger.info(f"Soft failure in task {self.name}: {str(e)}")
+            self.logger.info(f"Soft failure in task {self.name}: {str(e)}", extra={'ignore_action': True})
             self.set_passing_args(self.passing_args)
             self.update(status=TaskStatus.SOFT_FAILED, message=str(e))
         except Exception as e:
-            self.logger.error(f"Error in task {self.name}", exc_info=True)
+            self.logger.error(f"Error in task {self.name}", exc_info=True, extra={'ignore_action': True})
             self.update(status=TaskStatus.FAILED, message=str(e))
-        self.logger.info(f"----- {self.name} completed -----\n")
+        self.logger.info(f"----- {self.name} completed -----\n", extra={'ignore_action': True})
     
     def stop(self) -> None:
         self.cancel()

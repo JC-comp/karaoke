@@ -95,7 +95,18 @@ class Task(BaseTask):
         Cancels the task.
         """
         self.execution.cancel()
-
+    
+    def interrupt(self) -> None:
+        """
+        Interrupts the task.
+        """
+        if self.is_interrupting():
+            return
+        if self.is_pending():
+            self.cancel()
+        if self.is_running(): 
+            self.update(status=TaskStatus.INTERRUPTING)
+        
     def set_passing_args(self, args: dict[str, any]) -> None:
         """
         Sets the passing arguments for the task.
@@ -119,6 +130,9 @@ class Task(BaseTask):
         Updates the task attributes without logging what changes are made.
         This is used when the changes are already logged somewhere else.
         """
+        if self.status == TaskStatus.INTERRUPTING:
+            if 'status' in kwargs:
+                kwargs['status'] = TaskStatus.INTERRUPTING
         super().update(**kwargs)
         self.job.update(tasks={
             self.tid: kwargs
