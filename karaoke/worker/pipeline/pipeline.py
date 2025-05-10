@@ -134,8 +134,7 @@ class Pipeline:
                     else:
                         self.logger.info(f"Task {task.name} not in pending state: {task.status}")
                 else:
-                    task.cancel()
-                    self.logger.info(f"Task {task.name} failed due to incomplete prerequisites.")
+                    task.cancel(reason=f"Task {task.name} prerequisites not fulfilled")
     
     def start(self) -> None:
         """

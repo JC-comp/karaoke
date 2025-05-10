@@ -61,15 +61,19 @@ class RemoteJob(BaseJob):
         """
         super().done()
         result = JobStatus.COMPLETED
-        for task in self.tasks.values():
-            if task.is_interrupted():
-                self.logger.error(f'Setting job status to interrupted due to task: {task.name}')
-                result = JobStatus.INTERRUPTED
-                break
-            if not task.is_success():
-                self.logger.error(f'Setting job status to failed due to task: {task.name}')
-                result = JobStatus.FAILED
-                break
+        if self.status == JobStatus.INTERRUPTING:
+            self.logger.info('Setting job status to interrupted')
+            result = JobStatus.INTERRUPTED
+        else:
+            for task in self.tasks.values():
+                if task.is_interrupted():
+                    self.logger.error(f'Setting job status to interrupted due to task: {task.name}')
+                    result = JobStatus.INTERRUPTED
+                    break
+                if not task.is_success():
+                    self.logger.error(f'Setting job status to failed due to task: {task.name}')
+                    result = JobStatus.FAILED
+                    break
         
         self.update(status=result, isProcessExited=True)
         self.binder.close()

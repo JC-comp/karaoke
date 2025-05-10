@@ -90,11 +90,12 @@ class Task(BaseTask):
         self.passive_update(message="Waiting for preloading to complete")
         self.execution.run(args)
     
-    def cancel(self) -> None:
+    def cancel(self, reason: str) -> None:
         """
         Cancels the task.
         """
         self.execution.cancel()
+        self.update(status=TaskStatus.CANCELED, message=f"Task canceled due to {reason}")
     
     def interrupt(self) -> None:
         """
@@ -103,7 +104,7 @@ class Task(BaseTask):
         if self.is_interrupting():
             return
         if self.is_pending():
-            self.cancel()
+            self.cancel(reason="job interrupted")
         if self.is_running(): 
             self.update(status=TaskStatus.INTERRUPTING)
         
@@ -132,10 +133,11 @@ class Task(BaseTask):
         """
         if self.is_interrupting():
             if 'status' in kwargs:
-                kwargs['status'] = TaskStatus.INTERRUPTING
+                if kwargs['status'] != TaskStatus.INTERRUPTED:
+                    kwargs['status'] = TaskStatus.INTERRUPTING
         if not self.is_running() and not self.is_pending():
             if 'message' in kwargs:
-                del kwargs['message']
+                kwargs['message'] = self.message
         super().update(**kwargs)
         self.job.update(tasks={
             self.tid: kwargs
@@ -183,6 +185,8 @@ class Task(BaseTask):
         """
         Cleans up the task.
         """
+        if self.is_interrupting():
+            self.update(status=TaskStatus.INTERRUPTED, message="Task interrupted")
         super().done()
         self.update(status=self.status, message=self.message)
         self.logger.handlers.clear()

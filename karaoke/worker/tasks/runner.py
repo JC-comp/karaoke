@@ -2,15 +2,16 @@ import logging
 import threading
 import multiprocessing
 
-from .base import ExecuteTask, ExecuteJob
+from .base import ExecuteTask, ExecuteJob, ActionCallback
 from .task import Task
 from ...utils.task import TaskStatus
 from ...utils.job import JobAction
 
 class SyncJob(ExecuteJob):
-    def __init__(self, message_queue: multiprocessing.Queue) -> None:
+    def __init__(self, message_queue: multiprocessing.Queue, action_queue: multiprocessing.Queue) -> None:
         super().__init__()
         self.message_queue = message_queue
+        self.action_callback = ActionCallback(action_queue)
 
     def update(self, **kwargs) -> None:
         self.push('job', **kwargs)
@@ -20,11 +21,12 @@ class SyncJob(ExecuteJob):
             'target': target,
             'body': kwargs
         })
+        self.action_callback.check(ignore_action=False)
 
 class SyncTask(ExecuteTask):
-    def __init__(self, message_queue: multiprocessing.Queue) -> None:
+    def __init__(self, message_queue: multiprocessing.Queue, action_queue: multiprocessing.Queue) -> None:
         super().__init__()
-        self.job = SyncJob(message_queue)
+        self.job = SyncJob(message_queue, action_queue)
 
     def update(self, **kwargs) -> None:
         self.push('update', **kwargs)
@@ -90,7 +92,7 @@ class ProcessRunner:
         
         self.task.logger.info(f"Starting task {self.task.name} in a separate process")
         
-        sync_task = SyncTask(self.message_queue)
+        sync_task = SyncTask(self.message_queue, self.action_queue)
         logger = logging.getLogger(self.task.tid)
         logger.handlers.clear()
         logger.setLevel(self.task.logger.level)
