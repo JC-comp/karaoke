@@ -21,6 +21,13 @@ class JobStatus(str, enum.Enum):
     FAILED = "failed"
     CANCELED = "canceled"
 
+class JobAction(str, enum.Enum):
+    START = "start"
+    PAUSE = "pause"
+    STOP = "stop"
+    RESTART = "restart"
+    DELETE = "delete"
+
 class Media:
     def __init__(self, source: str, metadata: dict[str, str]):
         self.source = source
@@ -69,7 +76,8 @@ class BaseJob:
         jid: str, created_at: float, started_at: float, finished_at: float,
         job_type: str, media: dict[str, str],
         status: str, message: str, isProcessExited: bool, last_update: float, 
-        tasks: dict[dict], result_artifact_index: int, artifacts: list[str] | None = None
+        artifact_tags: dict[str, int], 
+        tasks: dict[dict], artifacts: list[str] | None = None
     ):
         """
         Initializes a BaseJob instance from the client request 
@@ -87,11 +95,11 @@ class BaseJob:
         self.message: str = message
         self.isProcessExited = isProcessExited
         self.last_update = last_update
+        self.artifact_tags: dict[str, int] = artifact_tags
 
         self.operation_lock = threading.RLock()
         self.tasks: dict[str, BaseTask] = {tid: BaseTask(**task) for tid, task in tasks.items()}
         self.artifacts: list[list[ArtifactType, str]] = artifacts if artifacts is not None else []
-        self.result_artifact_index: int = result_artifact_index
 
     def add_task(self, task: BaseTask) -> None:
         """
@@ -99,13 +107,15 @@ class BaseJob:
         """
         self.tasks[task.tid] = task
 
-    def add_artifact(self, artifact_type: ArtifactType, artifact: str) -> int:
+    def add_artifact(self, artifact_type: ArtifactType, artifact: str, tag: str | None = None) -> int:
         """
         Adds an artifact to the job and returns the index of the artifact.
         """
         with self.operation_lock:
             self.artifacts.append([artifact_type, artifact])
             aid = len(self.artifacts) - 1
+            if tag is not None:
+                self.artifact_tags[tag] = aid
         self.update(artifacts=self.artifacts)
         return aid
     
@@ -169,10 +179,10 @@ class BaseJob:
             "isProcessExited": self.isProcessExited,
             "last_update": self.last_update,
             "tasks": {task_id: task.serialize() for task_id, task in self.tasks.items()},
-            "result_artifact_index": self.result_artifact_index
+            "artifact_tags": self.artifact_tags
         }
 
-    def dump_serialize(self) -> str:
+    def dump_serialize(self) -> dict:
         """
         Serializes the job to a dictionary format with all attributes.
         This is used for dumping the job to a file.
