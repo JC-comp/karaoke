@@ -77,6 +77,22 @@ class SchedulerBinder(Connection):
 
     def create_by_file(self, file_path: str) -> list[dict, int]:
         return 'Not implemented yet', 501
+    
+    def update_job(self, jobId: str, action: str) -> list[dict, int]:
+        """
+        Update a job based on the job ID and action.
+        Returns a dictionary with the action result and the status code.
+        """
+        self.logger.debug(f'Updating job ID: {jobId}, action: {action}')
+        self.send(json.dumps({
+            'role': 'user',
+            'action': 'jobAction',
+            'jobId': jobId,
+            'jobAction': action
+        }))
+        result = self.json()
+        
+        return result
 
     def send_progress_to_sid(self, socketio: SocketIO, sid: str, namespace: str) -> None:
         """

@@ -48,6 +48,15 @@ def create_job() -> tuple:
     else:
         return 'No YouTube link or file provided.', 400
 
+@scheduler_bp.route('/job/<job_id>', methods=['POST'])
+def update_job(job_id: str) -> tuple:
+    """
+    Handle the action to a job based on the job ID.
+    """
+    scheduler: SchedulerBinder = g.scheduler
+    action = request.form.get('action')
+    return scheduler.update_job(job_id, action)
+
 @scheduler_bp.route('/artifact/<job_id>/<int:artifact_index>', methods=['GET'])
 def get_artifact(job_id: str, artifact_index: int) -> tuple:
     """
