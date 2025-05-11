@@ -40,6 +40,8 @@ class ProgressBuffer(io.StringIO):
             message = messages[-2]
         
         if message.strip():
+            if '\r' in lastline:
+                message += '\r'
             self.execution.passive_update(message=message)
 
     def write(self, s: str) -> int:
