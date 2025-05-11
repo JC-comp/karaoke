@@ -29,7 +29,7 @@ const initialSubtitle: Subtitle = {
         {
             start: 0,
             end: 0,
-            word: "Generating lyrics...",
+            text: "Generating lyrics...",
         }
     ]
 }
@@ -40,7 +40,7 @@ const failedSubtitle: Subtitle = {
         {
             start: 0,
             end: 0,
-            word: "Failed to generate lyrics",
+            text: "Failed to generate lyrics",
         }
     ]
 }

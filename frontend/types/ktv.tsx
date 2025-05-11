@@ -17,7 +17,7 @@ interface Room {
 }
 
 interface Word {
-    word: string;
+    text: string;
     start: number;
     end: number;
 }

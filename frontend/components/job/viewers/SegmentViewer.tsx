@@ -17,6 +17,7 @@ interface Segment {
   end: number;
   text: string;
   word: string;
+  words: string[];
 }
 
 export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { url: string, jobId: string, setIsLoading: (loading: boolean) => void, setError: (error: string | null) => void }) {
@@ -26,7 +27,7 @@ export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { 
   const [plugins, setPlugins] = useState<GenericPlugin[]>([
     OverlapRegionsPlugin.create(), ZoomPlugin.create({ scale: 0.01 })
   ]);
-  
+
   useEffect(() => {
     if (!rawData)
       return
@@ -38,12 +39,24 @@ export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { 
   function addRegion(wavesurfer: WaveSurfer) {
     const regionPlugin = plugins[0] as OverlapRegionsPlugin;
     regionPlugin.clearRegions();
+    function joinWords(words: string[]) {
+      return words.reduce((acc, word, index) => {
+        if (index === 0) {
+          return word;
+        } else if (/^[\x00-\x7F]*$/.test(word)) {
+          return acc + ' ' + word;
+        } else {
+          return acc + word;
+        }
+      }, '');
+    }
     segments.forEach((segment, id) => {
       const regionStart = segment.original_start === undefined ? segment.start : segment.original_start;
-      const text = segment.text || segment.word;
+      const text = segment.text || segment.word || (segment.words && joinWords(segment.words));
       const content = text === undefined ? undefined : document.createElement('div');
       if (content) {
-        content.innerText = segment.text || segment.word;
+        if (text)
+          content.innerText = text;
         content.style.zIndex = "6";
         content.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -58,7 +71,7 @@ export default function SegmentViewer({ url, jobId, setIsLoading, setError }: { 
         drag: false,
         resize: false,
       })
-      
+
     })
     regionPlugin.on('region-in', (region) => {
       region.setOptions({ color: 'rgba(0, 0, 0, 0.4)' })

@@ -207,8 +207,8 @@ export default function KTVYoutubePlayer({ videoId, shouldPlay, audioUrl, subtit
                                     data-start={word.start}
                                     data-end={word.end}
                                 >
-                                    <span className="bg">{word.word}</span>
-                                    <span className="fg" style={{ width: 0 }}>{word.word}</span>
+                                    <span className="bg">{word.text}</span>
+                                    <span className="fg" style={{ width: 0 }}>{word.text}</span>
                                 </div>
                             )
                         }
