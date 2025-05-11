@@ -52,7 +52,7 @@ class AlignLyricsExecution(Execution):
         pbar: tqdm.tqdm,
         acoustic_model: "AcousticModel", lexicon_compiler: "LexiconCompiler", 
         sound_file_path: Path,
-        text: str, start: float, end: float,
+        words: list[dict], start: float, end: float,
     ):
         """
         Align the lyrics with the audio.
@@ -62,11 +62,11 @@ class AlignLyricsExecution(Execution):
         from kalpy.utterance import Utterance as KalpyUtterance
         from montreal_forced_aligner.online.alignment import align_utterance_online
         # Remove unwanted characters
-        text = unicodedata.normalize("NFKC", text)
         removed_chars = ['\n', '\r', '\t', ' ']
         for char in removed_chars:
-            text = text.replace(char, '')
-        text = ' '.join(text)
+            for word in words:
+                word['word'] = unicodedata.normalize("NFKC", word['word'].replace(char, ''))
+        text = ' '.join([word['word'] for word in words])
 
         pbar.set_description(f"Generating audio features")
 
@@ -95,38 +95,27 @@ class AlignLyricsExecution(Execution):
         except Exception as e:
             self.logger.debug(f'Error during feature generation: {e}')
         
-        segment_text = text.split(' ')
         if ctm is None:
             # If alignment fails, equally distribute the words
             # across the time interval
             pbar.write("Alignment failed, using fallback method")
-            word_interval = (end - start) / len(segment_text)
-            aligned_lyrics = [
-                {
-                    'word': segment_text[i],
-                    'start': start + i * word_interval,
-                    'end': start + (i + 1) * word_interval
-                }
-                for i in range(len(segment_text))
-            ]
+            word_interval = (end - start) / len(words)
+            for i in range(len(words)):
+                words[i]['start'] = start + i * word_interval
+                words[i]['end'] = start + (i + 1) * word_interval
         else:
-            segment_text_iter = iter(segment_text)
-            aligned_lyrics = [
-                {
-                    'word': next(segment_text_iter),
-                    'start': word_interval.begin,
-                    'end': word_interval.end
-                }
-                for word_interval in ctm.word_intervals
-                if word_interval.label != '<eps>'
-            ]
-        return aligned_lyrics
+            word_iter = iter(words)
+            for word_interval in ctm.word_intervals:
+                if word_interval.label != '<eps>':
+                    word = next(word_iter)
+                    word['start'] = word_interval.begin
+                    word['end'] = word_interval.end
+        return words
     
-    def _set_result(self, audio_path: str, aligned_lyrics_cache_path: str, aligned_lyrics: list[dict]) -> None:
+    def _set_result(self, audio_path: str, aligned_lyrics: list[dict]) -> None:
         """
         Set the result of the alignment task.
         """
-        self.passing_args['aligned_lyrics_cache_path'] = aligned_lyrics_cache_path
         self.passing_args['aligned_lyrics'] = aligned_lyrics
         self.add_artifact(
             name='Aligned lyrics', 
@@ -153,38 +142,42 @@ class AlignLyricsExecution(Execution):
         # Align the lyrics with the audio
         pbar = tqdm.tqdm(mapped_lyrics, unit='lyric')
         aligned_lyrics = []
-        def is_single_word(text: str) -> bool:
-            """
-            Check if the text is a single word.
-            """
-            text = ''.join([c for c in text if not c.isascii()])
-            return len(text) <= 1
-        
         for lyrics in pbar:
-            if is_single_word(lyrics['text']):
+            if len(lyrics['words']) == 1:
+                word = lyrics['words'][0]
+                word['start'] = lyrics['start']
+                word['end'] = lyrics['end']
                 result = [
-                    {
-                        'word': lyrics['text'],
-                        'start': lyrics['start'],
-                        'end': lyrics['end']
-                    }
+                    word
                 ]
             else:
                 result = self.align(
                     pbar,
                     self.acoustic_model, self.lexicon_compiler, 
                     sound_file_path, 
-                    lyrics['text'], lyrics['start'], lyrics['end']
+                    lyrics['words'], lyrics['start'], lyrics['end']
                 )
             
             aligned_lyrics.extend(result)
 
-        self._set_result(audio_path, aligned_lyrics_cache_path, aligned_lyrics)
         with open(aligned_lyrics_cache_path, 'w', encoding='utf-8') as f:
             json.dump(aligned_lyrics, f, ensure_ascii=False, indent=4)
+        self._set_result(audio_path, aligned_lyrics)
         self.update(message='Alignment completed')
 
     def _start(self, args):
+        """
+        Align each mapped lyric segment with the audio.
+
+        Output:
+            - aligned_lyrics (list[Word]): List of aligned lyrics with start and end times.
+        
+        Word:
+            - word (str): The word in the lyric.
+            - start (float): The start time of the word in seconds.
+            - end (float): The end time of the word in seconds.
+            - group (int): The group index of the word in the sentence.
+        """
         self.update(message='Align lyrics from lyrics')
         audio_path = args['Vocals_only']
         mapped_lyrics = args['mapped_lyrics']
@@ -194,9 +187,9 @@ class AlignLyricsExecution(Execution):
         if os.path.exists(aligned_lyrics_cache_path):
             with open(aligned_lyrics_cache_path, 'r', encoding='utf-8') as f:
                 aligned_lyrics = json.load(f)
-                self._set_result(audio_path, aligned_lyrics_cache_path, aligned_lyrics)
-                self.update(message='Found aligned lyrics in cache')
-                return
+            self._set_result(audio_path, aligned_lyrics)
+            self.update(message='Found aligned lyrics in cache')
+            return
         
         lang = 'zh' # TODO: Determine language from audio
         sound_file_path = Path(audio_path)
@@ -206,7 +199,6 @@ class AlignLyricsExecution(Execution):
             audio_path, sound_file_path, mapped_lyrics
         ))
         
-
 class AlignLyrics(Task):
     def __init__(self, job: RemoteJob):
         super().__init__(

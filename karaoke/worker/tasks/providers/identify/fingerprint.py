@@ -2,14 +2,13 @@ import acoustid
 
 from .base import BaseIdentifier
 from ..utils import NotEnabledException
-from .....utils.translate import convert_simplified_to_traditional
 
 class FingerprintIdentifier(BaseIdentifier):
     name = "FingerprintIdentifier"
     """
     Identify music using AcoustID fingerprinting.
     """
-    def identify(self, audio_path: str, title: str, artist: str) -> tuple[str, str]:
+    def identify(self, audio_path: str) -> tuple[str, str]:
         if not self.config.acoustid_enabled:
             raise NotEnabledException("AcoustID is not enabled")
         
@@ -29,13 +28,13 @@ class FingerprintIdentifier(BaseIdentifier):
                 if artists:
                     artist_name = "".join(
                         [
-                            convert_simplified_to_traditional(artist["name"]) + artist.get("joinphrase", "")
+                            artist["name"] + artist.get("joinphrase", "")
                             for artist in artists
                         ]
                     )
                 else:
                     artist_name = None
-            title = convert_simplified_to_traditional(recording.get('title'))
+            title = recording.get('title')
             self.logger.info(f"Found music: {title} by {artist_name} with score {score}")
             return title, artist_name
         raise Exception("No music found with fingerprint")

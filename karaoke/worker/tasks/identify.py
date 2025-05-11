@@ -3,6 +3,7 @@ from .task import Task, Execution,ArtifactType
 from .providers.utils import NotEnabledException
 from .providers.identify import PROVIDERS
 from ..job import RemoteJob
+from ...utils.translate import convert_simplified_to_traditional
 
 class IdentifyMusicExecution(Execution):
     def identify_music(self, args: dict) -> tuple[str, str]:
@@ -10,13 +11,10 @@ class IdentifyMusicExecution(Execution):
         Identify music using available providers.
         """
         audio_path = args['source_audio']
-        media = args['media']
-        title = media.metadata.get('title')
-        artist = media.metadata.get('artist')
         for provider_type in PROVIDERS:
             provider = provider_type(self)
             try:
-                return provider.identify(audio_path, title, artist)
+                return provider.identify(audio_path)
             except NotEnabledException as e:
                 provider.logger.info(f"{e}")
             except Exception as e:
@@ -25,14 +23,21 @@ class IdentifyMusicExecution(Execution):
         return None, None
 
     def _start(self, args: dict) -> None:
+        """
+        Identify music using available providers.
+
+        Output:
+            - title? (str): cleaned title
+            - artist? (str): cleaned artist
+        """
         self.update(message='Identifying music')
         
         title, artist = self.identify_music(args)
         if title is None:
             raise SoftFailure("No music identified")
         
-        self.passing_args['title'] = title
-        self.passing_args['artist'] = artist
+        self.passing_args['title'] = convert_simplified_to_traditional(title)
+        self.passing_args['artist'] = convert_simplified_to_traditional(artist)
         
         self.add_artifact(
             name='Detected result', 

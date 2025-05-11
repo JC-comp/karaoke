@@ -1,23 +1,32 @@
 import json
 import re
+import os
 
 from .execution import SoftFailure
 from .task import Task, Execution, ArtifactType
 from ..job import RemoteJob
 
-def matching(transcription_characters: list, lyrics_characters: list) -> tuple:
+def compare_word(a: str, b: str) -> bool:
+    """
+    Compare two words and check if they are the same.
+    """
+    if a.lower() == b.lower():
+        return True
+    return False
+
+def matching(transcription_words: list, lyrics_words: list) -> tuple:
     """
     Find the maximum substring match between the transcription and the lyrics with 
     longest common subsequence algorithm.
     After matching, we mark the matched characters with a pair index.
     """
-    
-    dp = [[0] * (len(lyrics_characters) + 1) for _ in range(len(transcription_characters) + 1)]
-    route = [[0] * (len(lyrics_characters) + 1) for _ in range(len(transcription_characters) + 1)]
 
-    for i in range(1, len(transcription_characters) + 1):
-        for j in range(1, len(lyrics_characters) + 1):
-            if transcription_characters[i - 1]['char'] == lyrics_characters[j - 1]['char']:
+    dp = [[0] * (len(lyrics_words) + 1) for _ in range(len(transcription_words) + 1)]
+    route = [[0] * (len(lyrics_words) + 1) for _ in range(len(transcription_words) + 1)]
+
+    for i in range(1, len(transcription_words) + 1):
+        for j in range(1, len(lyrics_words) + 1):
+            if compare_word(transcription_words[i - 1]['word']['word'], lyrics_words[j - 1]['word']['word']):
                 max_index = 0
                 max_match = dp[i - 1][j - 1] + 1
             else:
@@ -28,12 +37,12 @@ def matching(transcription_characters: list, lyrics_characters: list) -> tuple:
             route[i][j] = max_index
             dp[i][j] = max_match
     # traceback matching characters
-    i = len(transcription_characters)
-    j = len(lyrics_characters)
+    i = len(transcription_words)
+    j = len(lyrics_words)
     while i > 0 and j > 0:
         if route[i][j] == 0:
-            lyrics_characters[j - 1]['pair'] = i
-            transcription_characters[i - 1]['pair'] = j
+            lyrics_words[j - 1]['pair'] = i
+            transcription_words[i - 1]['pair'] = j
             i -= 1
             j -= 1
         elif route[i][j] == 1:
@@ -65,17 +74,17 @@ def should_insert_new_group(
             return False
     return True
 
-def grouping(lyrics_characters: list, transcription_characters: list) -> list:
+def grouping(lyrics_words: list, transcription_words: list) -> list:
     """
-    Group the lyrics characters into time segments based on the matching with the
-    transcription characters.
-    All characters in the lyrics and all time segments in the transcription should belong 
+    Group the lyrics words into time segments based on the matching with the
+    transcription words.
+    All words in the lyrics and all time segments in the transcription should belong
     to a group.
-        1.  If the current character is not matched, add it to the current group as 
-            a missing character.
-        2.  If the unmatched character follows a character matched with a new group, we 
-            merge the two groups as we don't know which group the character belongs to.
-        3.  If a matched character follows a character matched with a new group
+        1.  If the current word is not matched, add it to the current group as
+            a missing word.
+        2.  If the unmatched word follows a word matched with a new group, we
+            merge the two groups as we don't know which group the word belongs to.
+        3.  If a matched word follows a word matched with a new group
             4.  If the the two groups are not contiguous, we merge the two groups as 
                 we don't know which group the voiced segment belongs to.
             5.  If previous matched character is not the last character of the group, we
@@ -86,72 +95,72 @@ def grouping(lyrics_characters: list, transcription_characters: list) -> list:
     """
     # Start filling groups of characters with an empty string
     sentences = [{
-        'start': transcription_characters[0]['start'],
-        'end': transcription_characters[0]['end'],
+        'start': transcription_words[0]['start'],
+        'end': transcription_words[0]['end'],
         'start_mapped_index': 0,
         'end_mapped_index': 0,
-        'text': ''
+        'words': []
     }]
     current_group = 0
     current_lyrics_character_index = 0
     # Iterate through the lyrics characters and check which group they belong to.
-    while (current_lyrics_character_index < len(lyrics_characters)):            
+    while (current_lyrics_character_index < len(lyrics_words)):            
         last_lyrics_character_pair = None # record if the last character was matched
-        while (current_lyrics_character_index < len(lyrics_characters)):
+        while (current_lyrics_character_index < len(lyrics_words)):
             # Get the current character and check if it is matched
-            pair = lyrics_characters[current_lyrics_character_index].get('pair')
+            pair = lyrics_words[current_lyrics_character_index].get('pair')
             # Check #1
             if pair is not None:
                 pair -= 1
-                if should_insert_new_group(pair, transcription_characters, current_group, last_lyrics_character_pair):
-                    sentences[-1]['end'] = transcription_characters[last_lyrics_character_pair]['end']
+                if should_insert_new_group(pair, transcription_words, current_group, last_lyrics_character_pair):
+                    sentences[-1]['end'] = transcription_words[last_lyrics_character_pair]['end']
                     sentences[-1]['end_mapped_index'] = last_lyrics_character_pair
                     sentences.append({
-                        'start': transcription_characters[pair]['start'],
-                        'end': transcription_characters[pair]['end'],
+                        'start': transcription_words[pair]['start'],
+                        'end': transcription_words[pair]['end'],
                         'start_mapped_index': pair,
                         'end_mapped_index': pair,
-                        'text': ''
+                        'words': []
                     })
-                    current_group = transcription_characters[pair]['group']
+                    current_group = transcription_words[pair]['group']
                     break
                 # Merge the two groups without appending a new group to the sentences
-                current_group = transcription_characters[pair]['group']
+                current_group = transcription_words[pair]['group']
             last_lyrics_character_pair = pair
-            sentences[-1]['text'] += lyrics_characters[current_lyrics_character_index]['char']
+            sentences[-1]['words'].append(lyrics_words[current_lyrics_character_index]['word'])
             current_lyrics_character_index += 1
-    sentences[-1]['end'] = transcription_characters[-1]['end']
-    sentences[-1]['end_mapped_index'] = len(transcription_characters) - 1
+    sentences[-1]['end'] = transcription_words[-1]['end']
+    sentences[-1]['end_mapped_index'] = len(transcription_words) - 1
     return sentences
 
-def unwrap_misspelled_characters(sentences: list, transcription_characters: list) -> list:
+def unwrap_mistranscribed_words(sentences: list, transcription_words: list) -> list:
     """
-    Unwrap the sentences with the same length as the transcription characters but different
-    characters.
+    Unwrap the sentences with the same length as the transcription sentences but different
+    words.
     """
     i = 0
     while i < len(sentences):
         sentence = sentences[i]
         start_mapped_index = sentence['start_mapped_index']
         end_mapped_index = sentence['end_mapped_index']
-        text = sentence['text']
+        words = sentence['words']
         # Check if the length of the grouped sentence is the same as the length of the transcription
-        if len(text) != (end_mapped_index - start_mapped_index + 1):
+        if len(words) != (end_mapped_index - start_mapped_index + 1):
             i += 1
             continue
         # Split the sentence into two sentences
-        transcription_sentence = transcription_characters[start_mapped_index]
-        transcription_sentence_len = len(transcription_sentence['text'])
+        transcription_sentence = transcription_words[start_mapped_index]
+        transcription_sentence_len = len(transcription_sentence['words'])
         unwrap_end_mapped_index = start_mapped_index + transcription_sentence_len - 1
         mapped_sentence = {
             'start': transcription_sentence['start'],
             'end': transcription_sentence['end'],
-            'text': text[:transcription_sentence_len],
+            'words': words[:transcription_sentence_len],
             'start_mapped_index': start_mapped_index,
             'end_mapped_index': unwrap_end_mapped_index
         }
 
-        remaining_text = text[transcription_sentence_len:]
+        remaining_text = words[transcription_sentence_len:]
         if len(remaining_text) == 0:
             # If the remaining text is empty, we can just update the sentence
             sentences[i] = mapped_sentence
@@ -159,9 +168,9 @@ def unwrap_misspelled_characters(sentences: list, transcription_characters: list
             # If the remaining text is not empty, we need to split the sentence
             next_mapped_index = unwrap_end_mapped_index + 1
             sentences[i] = {
-                'start': transcription_characters[next_mapped_index]['start'],
+                'start': transcription_words[next_mapped_index]['start'],
                 'end': sentences[i]['end'],
-                'text': remaining_text,
+                'words': remaining_text,
                 'start_mapped_index': next_mapped_index,
                 'end_mapped_index': end_mapped_index
             }
@@ -169,12 +178,17 @@ def unwrap_misspelled_characters(sentences: list, transcription_characters: list
         i += 1
     return sentences
 
+def separate_sentence(lyrics: str) -> str:
+    """
+    Separate a sentence into words.
+    """
+    return [token for token in re.split(r'([^\x00-\x7F])|\s+', lyrics) if token and not token.isspace()]
+
 class MapLyricsExecution(Execution):
-    def _set_result(self, vocal_path : str, mapped_lyrics_cache_path: str, sentences: list[dict]) -> None:
+    def _set_result(self, vocal_path : str, sentences: list[dict]) -> None:
         """
         Set the result of the mapping task.
         """
-        self.passing_args['mapped_lyrics_cache_path'] = mapped_lyrics_cache_path
         self.passing_args['mapped_lyrics'] = sentences
         self.add_artifact(
             name='Mapped lyrics', 
@@ -192,51 +206,92 @@ class MapLyricsExecution(Execution):
     def _start(self, args: dict) -> None:
         """
         Map the correct lyrics with the transcription to get sentence level timestamps.
+
+        Output:
+            - mapped_lyrics (list[TimedSentence]): List of sentences with their start and end times.
+
+        TimedSentence:
+            - start (float): Start time of the sentence in seconds.
+            - end (float): End time of the sentence in seconds.
+            - words (list[Word]): List of words in the sentence.
+            - text (str): The sentence itself.
+        
+        Word:
+            - word (str): The word in the sentence.
+            - group (int): The group index of the word in the sentence.
         """
         self.update(message='Mapping transcription with lyrics')
         transcription = args['transcription']
         vocal_path = args['Vocals_only']
         lyrics = args.get('lyrics')
+        mapped_lyrics_cache_path = os.path.join(self.config.media_path, args['identifier'] + '.mapped')
         
-        # if no lyrics found, use the transcription as the lyrics directly
         transcription_sentences = [
             {
-                'start': t['start'],
-                'end': t['end'],
-                'text': t['text']
+                **t,
+                'words': [
+                    {
+                        'word': w,
+                        'group': idx
+                    }
+                    for w in separate_sentence(t['text'])
+                ],
             }
-            for t in transcription
+            for idx, t in enumerate(transcription)
         ]
+        
+        # if no lyrics found, use the transcription as the lyrics directly
         if not lyrics:
-            self._set_result(vocal_path, args['transcription_cache_path'], transcription_sentences)
+            self._set_result(vocal_path, transcription_sentences)
             raise SoftFailure('No lyrics found, using transcription')
-        
-        lyrics_cache_path = args['lyrics_cache_path']
-        mapped_lyrics_cache_path = lyrics_cache_path + '.mapped'
 
-        lyrics_characters = [
-            {'char': c,}
-            for c in list(''.join(re.split(r'\n| ', lyrics)))
-        ]
-        transcription_characters = [
-            {'char': c, 'group': idx, **s}
-            for idx, s in enumerate(transcription)
-            for c in list(''.join(re.split(r'\n| ', s['text'])))
+        lyrics_sentences = [
+            {
+                'words': [
+                    {
+                        'word': w,
+                        'group': idx
+                    }
+                    for w in separate_sentence(l)
+                ],
+                'text': l
+            }
+            for idx, l in enumerate(lyrics.split('\n'))
         ]
         
-        _, dp = matching(transcription_characters, lyrics_characters)
-        if dp[-1][-1] < len(lyrics_characters) * 0.4:
-            self._set_result(vocal_path, args['transcription_cache_path'], transcription_sentences)
-            raise SoftFailure(f"Not enough match found ({dp[-1][-1]} / {len(lyrics_characters)} / {len(transcription_characters)}), using transcription")
+        lyrics_words = [
+            {'word': w, 'group': idx}
+            for idx, l in enumerate(lyrics_sentences)
+            for w in l['words']
+        ]
+        transcription_words = [
+            {'word': w, 'group': idx, **s}
+            for idx, s in enumerate(transcription_sentences)
+            for w in s['words']
+        ]
+        
+        _, dp = matching(transcription_words, lyrics_words)
+        if dp[-1][-1] < len(lyrics_words) * 0.4:
+            self._set_result(vocal_path, transcription_sentences)
+            raise SoftFailure(f"Not enough match found ({dp[-1][-1]} / {len(lyrics_words)} / {len(transcription_words)}), using transcription")
 
         self.update(message='Remapping timestamps')
-        grouped_sentences = grouping(lyrics_characters, transcription_characters)
-        sentences = unwrap_misspelled_characters(grouped_sentences, transcription_characters)
+        grouped_sentences = grouping(lyrics_words, transcription_words)
+        sentences = unwrap_mistranscribed_words(grouped_sentences, transcription_words)
 
-        self._set_result(vocal_path, mapped_lyrics_cache_path, sentences)
+        for sentence in sentences:
+            if not sentence['words']:
+                continue
+            sentence['text'] = sentence['words'][0]['word']
+            for word in sentence['words'][1:]:
+                if word['word'].isascii():
+                    sentence['text'] += ' ' + word['word']
+                else:
+                    sentence['text'] += word['word']
+
         with open(mapped_lyrics_cache_path, 'w') as f:
             json.dump(sentences, f, ensure_ascii=False)
-                
+        self._set_result(vocal_path, sentences)                
         self.update(message='Mapping completed')
 
 class MapLyrics(Task):

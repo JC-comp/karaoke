@@ -33,6 +33,7 @@ class SubtitleGenerator:
             'words': [
                 {
                     'word': title,
+                    'text': title,
                     'start': 1,
                     'end': 1
                 }
@@ -49,13 +50,14 @@ class SubtitleGenerator:
             'words': [
                 {
                     'word': artist,
+                    'text': artist,
                     'start': 1,
                     'end': 1
                 }
             ]
         })
 
-    def add_line(self, line, next_line):
+    def add_line(self, line: list[dict], next_line: list[dict]):
         if self.currnet_line is not None:
             # show next line when the current line is played to the middle
             mid = len(self.currnet_line) // 2
@@ -90,11 +92,16 @@ class SubtitleGenerator:
             x = 0.95
             y = self.font_size * 0.33
         self.line_count += 1
+        
+        if line:
+            line[0]['text'] = line[0]['word']
         if len(line) > 1:
             for l in line[1:]:
-                nonascii = ''.join([c for c in l['word'] if not c.isascii()])
-                if (len(nonascii) == 0):
-                    l['word'] = ' ' + l['word']
+                if l['word'].isascii():
+                    l['text'] = ' ' + l['word']
+                else:
+                    l['text'] = l['word']
+
         timed_line = {
             'start': start_time,
             'end': end,

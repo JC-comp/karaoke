@@ -20,11 +20,10 @@ class TranscriptLyricsExecution(Execution):
         self.logger.info("Whisper model loaded")
         return True
 
-    def _set_result(self, vocal_path: str, transcription_cache_path: str, segments: list[dict]) -> None:
+    def _set_result(self, vocal_path: str, segments: list[dict]) -> None:
         """
         Set the result of the transcription task.
         """
-        self.passing_args['transcription_cache_path'] = transcription_cache_path
         self.passing_args['transcription'] = segments
         self.add_artifact(
             name='Transcription results', 
@@ -42,17 +41,17 @@ class TranscriptLyricsExecution(Execution):
     def _external_long_running_task(self, args) -> None:
         """
         Run the transcription in a separate process to capture the progress in real-time.
-        """
-        vocal_path, vad_segments = args
-        
-        transcription_cache_path = os.path.join(vocal_path + '.transcript')
-        if os.path.exists(transcription_cache_path):
-            with open(transcription_cache_path, 'r') as f:
-                segments = json.load(f)
-                self._set_result(vocal_path, transcription_cache_path, segments)
-                self.update(message='Found transcription in cache')
-                return
 
+        Output:
+            - transcription (Word[]): List of words with their start and end times.
+        
+        Word:
+            - start (float): Start time of the word in seconds.
+            - end (float): End time of the word in seconds.
+            - word (str): The word itself.
+            - no_speech_prob (float): Probability of no speech in the corresponding segment.
+        """
+        vocal_path, vad_segments, transcription_cache_path = args
         self.update(message="Starting transcription")
 
         clip_timestamps = [
@@ -60,8 +59,8 @@ class TranscriptLyricsExecution(Execution):
             for segment in vad_segments
             for ts in [segment['start'], segment['end']]
         ]
-        
         initial_prompt = self.config.whisper_initial_prompt
+
         result = self.model.transcribe(
             vocal_path, language="zh", initial_prompt=initial_prompt, 
             clip_timestamps=clip_timestamps,
@@ -69,6 +68,7 @@ class TranscriptLyricsExecution(Execution):
             word_timestamps=True,
             verbose=False
         )
+
         self.update(message="Collecting transcription results")
         segments = [
             {
@@ -80,9 +80,10 @@ class TranscriptLyricsExecution(Execution):
             for segment in result['segments']
             for words in segment['words']
         ]
+
         with open(transcription_cache_path, 'w') as f:
             json.dump(segments, f, ensure_ascii=False)
-        self._set_result(vocal_path, transcription_cache_path, segments)
+        self._set_result(vocal_path, segments)
         self.update(message='Transcription completed')
     
     def _start(self, args):
@@ -93,8 +94,16 @@ class TranscriptLyricsExecution(Execution):
         self.update(message='Transcribing lyrics with whisper')
         vocal_path = args['Vocals_only']
         vad_segments = args['vad_segments']
+
+        transcription_cache_path = os.path.join(vocal_path + '.transcript')
+        if os.path.exists(transcription_cache_path):
+            with open(transcription_cache_path, 'r') as f:
+                segments = json.load(f)
+            self._set_result(vocal_path, segments)
+            self.update(message='Found transcription in cache')
+            return
         
-        self._start_external_long_running_task((vocal_path, vad_segments))
+        self._start_external_long_running_task((vocal_path, vad_segments, transcription_cache_path))
 
 
 class TranscriptLyrics(Task):

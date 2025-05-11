@@ -2,7 +2,6 @@ import urllib.parse
 
 from musicxmatch_api import MusixMatchAPI
 from .base import BaseLyricsProvider
-from .....utils.translate import convert_simplified_to_traditional
 
 def macro_search(api: MusixMatchAPI, q: str) -> dict:
     """
@@ -47,8 +46,8 @@ class MusixMatch(BaseLyricsProvider):
         track_list = search_result['message']['body']['macro_result_list']['track_list']
         for track in track_list:
             if track['track']['track_id'] == track_id:
-                found_title = convert_simplified_to_traditional(track['track']['track_name'])
-                found_artist = convert_simplified_to_traditional(track['track']['artist_name'])
+                found_title = track['track']['track_name']
+                found_artist = track['track']['artist_name']
                 self.logger.info(f"Found track: {found_title} by {found_artist}")
                 
                 break
@@ -72,6 +71,6 @@ class MusixMatch(BaseLyricsProvider):
         if lyrics_json['lyrics_body'] == '':
             raise Exception(f"Lyrics are empty: {lyrics_json}")
         
-        lyrics = convert_simplified_to_traditional(lyrics_json['lyrics_body'])
+        lyrics = lyrics_json['lyrics_body']
         return lyrics
     

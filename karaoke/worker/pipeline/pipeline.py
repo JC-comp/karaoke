@@ -12,6 +12,7 @@ class Pipeline:
     def __init__(self, job: RemoteJob):
         self.job = job
         self.tasks: list[Task] = self.build_pipeline()
+        self.identifier = None
         self.runners = {}
         self.runner_threads: list[threading.Thread] = []
         self.logger = get_logger(__name__, Config().log_level)
@@ -98,6 +99,8 @@ class Pipeline:
                     if not task.is_running()
                 ]
                 for task in finished_tasks:
+                    if 'identifier' in task.get_passing_args():
+                        self.identifier = task.get_passing_args()['identifier']
                     running_tasks.remove(task)
                     for subtask in task.subsequent_tasks:
                         prerequisite_count[subtask.name] -= 1
@@ -130,7 +133,7 @@ class Pipeline:
                 if task.is_prerequisite_fulfilled():
                     if task.is_pending():
                         task.update(status=TaskStatus.QUEUED)
-                        task.run()
+                        task.run(identifier=self.identifier)
                     else:
                         self.logger.info(f"Task {task.name} not in pending state: {task.status}")
                 else:

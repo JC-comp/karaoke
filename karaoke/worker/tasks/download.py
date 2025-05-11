@@ -44,13 +44,17 @@ class DownloadYoutubeExecution(Execution):
         Download video from youtube using yt-dlp. Extract metadata and 
         update the job with the metadata.
         See https://github.com/yt-dlp/yt-dlp for more details.
+
+        Output:
+            - identifier (str): unique identifier for the video
+            - source_video (str): path to the downloaded video
+            - source_audio (str): path to the downloaded audio
         """
         self.update(message='Downloading video from youtube')
         url = args['media'].source
 
         logger = LoggerHook(self)
         
-
         ydl_opts = {
             "format": f"best{self.format_key}",
             "outtmpl": os.path.join(self.config.media_path, f"%(id)s_{self.format_key}.%(ext)s"),
@@ -66,6 +70,7 @@ class DownloadYoutubeExecution(Execution):
             info = ydl.extract_info(url, download=False)
             
             self.passing_args['source_' + self.format_key] = ydl.prepare_filename(info)
+            self.passing_args['identifier'] = info['id']
 
             if 'duration' not in info:
                 raise ValueError("Duration not found in the video metadata")

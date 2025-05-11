@@ -7,6 +7,14 @@ class VoiceActivityExecution(Execution):
         """
         Detects voice activity with auditok.
         See https://github.com/amsehili/auditok for more details.
+
+        Output:
+            - vad_segments (Segments[]): List of segments with start and end times.
+
+        Segments:
+            - start (float): Start time of the segment in seconds.
+            - end (float): End time of the segment in seconds.
+            - duration (float): Duration of the segment in seconds.
         """
         vocal_path = args['Vocals_only']
 

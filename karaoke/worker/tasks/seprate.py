@@ -43,6 +43,10 @@ class SeperateAudioExecution(Execution):
         Separate the audio into primary and secondary stems according to the model used.
         Run in a separate process so that we can capture the output and error streams.
         See https://github.com/nomadkaraoke/python-audio-separator for more details.
+
+        Output:
+            - Vocals_only (str): Path to the separated vocals audio file.
+            - Instrumental_only (str): Path to the separated instrumental audio file.
         """
         audio_path, output_dir = args
         

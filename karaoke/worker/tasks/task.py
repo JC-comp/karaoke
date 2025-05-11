@@ -85,8 +85,10 @@ class Task(BaseTask):
                 return False
         return True
     
-    def run(self) -> None:
+    def run(self, identifier: str | None) -> None:
         args = self.get_running_args()
+        if identifier:
+            args['identifier'] = identifier
         self.passive_update(message="Waiting for preloading to complete")
         self.execution.run(args)
     
@@ -113,6 +115,12 @@ class Task(BaseTask):
         Sets the passing arguments for the task.
         """
         self.execution.passing_args = args
+    
+    def get_passing_args(self) -> dict[str, any]:
+        """
+        Returns the passing arguments for the task.
+        """
+        return self.execution.passing_args
 
     def get_running_args(self) -> dict[str, any]:
         """
@@ -121,7 +129,7 @@ class Task(BaseTask):
         args = {
             k: v
             for t in self.prerequisites
-            for k, v in t.execution.passing_args.items()
+            for k, v in t.get_passing_args().items()
         }
         args['media'] = self.job.media
         return args
