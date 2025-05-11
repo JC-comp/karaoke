@@ -36,6 +36,7 @@ class YoutubePipeline(Pipeline):
 
         voice_activity.add_prerequisite(seperate_vocal)
 
+        transcript.add_prerequisite(seperate_vocal) # using vocal only audio
         transcript.add_prerequisite(voice_activity) # using audio without silence to reduce hallucination
         # transcript.add_prerequisite(seperate_instrument) # ensure one gpu task at a time
 

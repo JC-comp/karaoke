@@ -153,8 +153,15 @@ class AlignLyricsExecution(Execution):
         # Align the lyrics with the audio
         pbar = tqdm.tqdm(mapped_lyrics, unit='lyric')
         aligned_lyrics = []
+        def is_single_word(text: str) -> bool:
+            """
+            Check if the text is a single word.
+            """
+            text = ''.join([c for c in text if not c.isascii()])
+            return len(text) <= 1
+        
         for lyrics in pbar:
-            if len(lyrics['text']) == 1:
+            if is_single_word(lyrics['text']):
                 result = [
                     {
                         'word': lyrics['text'],

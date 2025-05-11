@@ -90,6 +90,11 @@ class SubtitleGenerator:
             x = 0.95
             y = self.font_size * 0.33
         self.line_count += 1
+        if len(line) > 1:
+            for l in line[1:]:
+                nonascii = ''.join([c for c in l['word'] if not c.isascii()])
+                if (len(nonascii) == 0):
+                    l['word'] = ' ' + l['word']
         timed_line = {
             'start': start_time,
             'end': end,
