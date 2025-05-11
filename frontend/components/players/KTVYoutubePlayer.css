@@ -22,7 +22,7 @@
 }
 
 .subtitle span {
-    white-space: nowrap;
+    white-space: pre;
 }
 
 .word {
