@@ -65,14 +65,21 @@ def download(url: str, path: str, output: io.StringIO, overwrite: bool = False):
     if not os.path.exists(os.path.dirname(path)):
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
+    tempfile = path + '.part'
+    if os.path.exists(tempfile):
+        output.write(f"Temporary file {tempfile} exists. Deleting.\n")
+        os.remove(tempfile)
+
     with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True, file=output) as pbar:
-        with open(path, 'wb') as file:
+        with open(tempfile, 'wb') as file:
             for data in response.iter_content(block_size):
                 file.write(data)
                 pbar.update(len(data))
     
     if total_size != 0 and pbar.n != total_size:
         raise ValueError(f"Downloaded file size {pbar.n} does not match expected size {total_size}.")
+    
+    os.rename(tempfile, path)
 
 
 class Config:

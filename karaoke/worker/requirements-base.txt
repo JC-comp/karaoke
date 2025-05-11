@@ -2,7 +2,6 @@ yt-dlp[default]
 pyacoustid
 auditok
 musicxmatch_api
-onnxruntime
 jieba
 montreal-forced-aligner
 pynini
