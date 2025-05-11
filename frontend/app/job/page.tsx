@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation'
 import Moment from 'react-moment';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimesCircle, faSpinner, faPaperclip, IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { faTimesCircle, faSpinner, faPaperclip, IconDefinition, faExpand, faCompress } from '@fortawesome/free-solid-svg-icons';
 import { toast } from 'react-toastify';
 
 import ArtifactDetails from '@/components/job/ArtifactDetails';
@@ -82,6 +82,7 @@ const JobProcessPage = () => {
   const [jobInfo, setJobInfo] = useState<JobInfo | null>(null);
   const prevJobInfo = usePrevious(jobInfo);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   if (!jobId) {
     toast.error('Job ID is missing');
@@ -139,6 +140,30 @@ const JobProcessPage = () => {
     )
   }
 
+  function toggleResultFullscreen(e: React.MouseEvent<HTMLButtonElement>) {
+    var parent = e.currentTarget.parentElement;
+    while (parent && parent.tagName !== 'LI') {
+      parent = parent.parentElement;
+    }
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else if (parent) {
+      parent.requestFullscreen();
+    }
+  }
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement !== null);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   if (failedMessage) {
     return processingHint(failedMessage, 'text-danger', false, faTimesCircle);
   }
@@ -189,9 +214,16 @@ const JobProcessPage = () => {
                 </li>
                 {
                   <li className="list-group-item">
-                    <strong>Result:</strong>
-                    <div className="position-relative">
-                      <ProductPreview jobInfo={jobInfo} />
+                    <div className="d-flex flex-column w-100 h-100">
+                      <div>
+                        <strong>Result:</strong>
+                        <button className='btn btn-outline-info btn-sm mx-2' onClick={toggleResultFullscreen}>
+                          <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} size='sm' />
+                        </button>
+                      </div>
+                      <div className='flex-grow-1'>
+                        <ProductPreview jobInfo={jobInfo} />
+                      </div>
                     </div>
                   </li>
                 }
