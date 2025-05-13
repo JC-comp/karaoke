@@ -9,10 +9,16 @@ class SeperateAudioExecution(Execution):
         self.model_name = model_name
         self.passing_key = passing_key
 
+    def get_daemon_socket(self) -> str:
+        return self.__class__.__name__.lower() + '_' + self.model_name.lower() + '.sock'
+
     def _preload(self) -> bool:
         """
         Preload models for the separation task.
         """
+        if hasattr(self, 'separator'):
+            self.logger.info("Models already preloaded")
+            return True
         self.logger.info("Preloading models for separation task")
         from audio_separator.separator import Separator
         self.output_format = "mp3"

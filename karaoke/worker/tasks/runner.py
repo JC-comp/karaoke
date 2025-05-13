@@ -25,23 +25,7 @@ class SyncJob(ExecuteJob):
 
 class SyncTask(ExecuteTask):
     def __init__(self, message_queue: multiprocessing.Queue, action_queue: multiprocessing.Queue) -> None:
-        super().__init__()
-        self.job = SyncJob(message_queue, action_queue)
-
-    def update(self, **kwargs) -> None:
-        self.push('update', **kwargs)
-    
-    def set_passing_args(self, args: dict) -> None:
-        self.push('passing_args', args=args)
-
-    def passive_update(self, **kwargs) -> None:
-        self.push('passive_update', **kwargs)
-
-    def add_artifact(self, **kwargs) -> None:
-        self.push('artifact', **kwargs)
-
-    def push(self, target: str, **kwargs) -> None:
-        self.job.push(target, **kwargs)
+        super().__init__(SyncJob(message_queue, action_queue))
 
 class ProcessRunner:
     def __init__(self, task: Task) -> None:

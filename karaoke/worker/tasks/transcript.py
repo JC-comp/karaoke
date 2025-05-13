@@ -9,6 +9,9 @@ class TranscriptLyricsExecution(Execution):
         """
         Preload any resources needed for the task.
         """
+        if hasattr(self, 'model'):
+            self.logger.info("Whisper model already loaded")
+            return True
         self.logger.info("Loading whisper model")
         import whisper
         import torch

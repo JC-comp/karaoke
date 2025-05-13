@@ -43,6 +43,19 @@ class Pipeline:
                 self.logger.error(f'Task done failed: {task.name}', exc_info=True)
             with self.operation_lock:
                 self.operation_lock.notify_all()
+
+    def start_runner(self, task: Task) -> None:
+        """
+        Starts the runner for the given task.
+        """
+        if task.name not in self.runners:
+            runner = ProcessRunner(task)
+            t = threading.Thread(target=self.run_task, args=(runner,))
+            t.start()
+            self.runners[task.name] = runner
+            self.runner_threads.append(t)
+        else:
+            self.logger.info(f"Runner for task {task.name} already exists.")
     
     def pre_start(self) -> None:
         """
@@ -50,12 +63,8 @@ class Pipeline:
         """
         for task in self.tasks:
             if task.name not in self.runners:
-                runner = ProcessRunner(task)
-                t = threading.Thread(target=self.run_task, args=(runner,))
-                t.start()
-                self.runners[task.name] = runner
-                self.runner_threads.append(t)
-
+                self.start_runner(task)
+                
     def post_start(self) -> None:
         """
         Recycles the runners for each task in the pipeline.
@@ -78,7 +87,7 @@ class Pipeline:
         self.logger.info(f'Starting pipeline with job ID: {self.job.jid}')
         self.job.update(status=JobStatus.RUNNING)
         
-        self.pre_start()
+        # self.pre_start() # Memory limitations, we will not preload the models
 
         # Initialize the queue with tasks that have no prerequisites
         pending: queue.Queue[Task] = queue.Queue()
@@ -133,6 +142,7 @@ class Pipeline:
                 if task.is_prerequisite_fulfilled():
                     if task.is_pending():
                         task.update(status=TaskStatus.QUEUED)
+                        self.start_runner(task)
                         task.run(identifier=self.identifier)
                     else:
                         self.logger.info(f"Task {task.name} not in pending state: {task.status}")

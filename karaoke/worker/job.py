@@ -4,10 +4,9 @@ import uuid
 import threading
 
 from .binder.base import Binder
-from ..utils.job import BaseJob, JobStatus, JobAction
+from ..utils.job import BaseJob, JobStatus, JobAction, JobType
 from ..utils.task import BaseTask
 from ..utils.config import get_logger, Config
-
 
 class RemoteJob(BaseJob):
     """
@@ -94,3 +93,18 @@ class CommandJob(RemoteJob):
             tasks={}, artifacts=None
         )
         self.logger = get_logger(__name__, Config().log_level)
+
+
+class DaemonJob(BaseJob):
+    """
+    This class represents a job that is created by a command line.
+    """
+    def __init__(self) -> None:
+        super().__init__(
+            jid=str(uuid.uuid4()), created_at=time.time(), started_at=None, finished_at=None,
+            job_type=JobType.LOCAL, media={'source': None, 'metadata': {}},
+            status=JobStatus.PENDING, message='Waiting for scheduler...',
+            isProcessExited=False, last_update=time.time(), 
+            artifact_tags={},
+            tasks={}, artifacts=None
+        )

@@ -40,12 +40,16 @@ class AlignLyricsExecution(Execution):
         return acoustic_model, lexicon_compiler
 
     def _preload(self):
+        if hasattr(self, 'acoustic_model') and hasattr(self, 'lexicon_compiler'):
+            self.logger.info("Models already preloaded")
+            return True
         self.lang = 'zh'
         self.logger.info("Preloading models for alignment task")
         acoustic_model, lexicon_compiler = self.load_models(self.lang)
         self.acoustic_model = acoustic_model
         self.lexicon_compiler = lexicon_compiler
         self.logger.info("Models preloaded")
+        return True
 
     def align(
         self, 
