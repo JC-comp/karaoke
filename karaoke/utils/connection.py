@@ -6,6 +6,8 @@ import threading
 
 from ..utils.config import Config, get_logger
 
+PACKET_DELIMITER = '\0'
+
 class Connection:
     def __init__(self, socket: socket.socket, server_side: bool = False):
         self.socket = socket
@@ -55,9 +57,9 @@ class Connection:
                 if not data:
                     raise RuntimeError('Peer gone')
                 buffer.extend(data)
-                if b'\n' in buffer:
-                    self.logger.debug(f"Hitting newline in buffer")
-                    packets = bytes(buffer).split(b'\n')
+                if PACKET_DELIMITER.encode('utf-8') in buffer:
+                    self.logger.debug("Hitting new packet delimiter")
+                    packets = bytes(buffer).split(PACKET_DELIMITER.encode('utf-8'))
                     for packet in packets[:-1]:
                         self.logger.debug(f"Received packet: {packet}")
                         data = packet.decode('utf-8')
@@ -71,7 +73,7 @@ class Connection:
     def json_idle(self) -> dict:
         """
         This method is used to read data from the socket and parse it as JSON.
-        It is used when the listener is idle and not only waiting for a 'bye' message.
+        It is used when the listener is idle and only waiting for a 'bye' message.
         """
         data = json.loads(self.read())
         if 'error' in data:
@@ -94,14 +96,11 @@ class Connection:
             
     def send(self, message: str) -> None:
         """
-        Send a message to the socket. The message is encoded as UTF-8 and
-        newlines are replaced with empty strings.
-        The separator is a newline character.
+        Send a message to the socket. The separator is a null byte.
         """
-        text_without_newlines = message.replace('\n', '')
-        text_without_newlines = text_without_newlines + '\n'
-        self.logger.debug(f"Sending message: {text_without_newlines}")
-        self.socket.sendall(text_without_newlines.encode('utf-8'))
+        message += PACKET_DELIMITER
+        self.logger.debug(f"Sending message: {message}")
+        self.socket.sendall(message.encode('utf-8'))
 
     def bye(self) -> None:
         """
@@ -116,14 +115,11 @@ class Connection:
         }))
         while True:
             try:
-                data = self.json_idle()
+                self.json_idle()
             except RuntimeError as e:
-                if self.bye_acked:
-                    # Bye message is acknowledged by other reader
-                    self.log(self.logger.debug, "Bye message acknowledged")
-                    break
-                raise e
-            if 'bye' in data:
+                if not self.bye_acked:
+                    raise e
+            if self.bye_acked:
                 self.log(self.logger.debug, "Bye message acknowledged")
                 break
 

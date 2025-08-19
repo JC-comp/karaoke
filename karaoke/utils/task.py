@@ -19,7 +19,6 @@ class ArtifactType(str, enum.Enum):
     JSON = 'json'
     TEXT = 'text'
     SEGMENTS = 'segments'
-    PRODUCT = 'product'
 
 class Artifact:
     def __init__(self, aid: int, name: str, artifact_type: ArtifactType, is_attached: bool):
@@ -64,6 +63,12 @@ class BaseTask:
             value = TaskStatus(value)
         super().__setattr__(name, value)
 
+    def is_pending(self) -> bool:
+        """
+        Checks if the task is pending.
+        """
+        return self.status == TaskStatus.PENDING
+
     def is_running(self) -> bool:
         """
         Checks if the task is currently running.
@@ -76,6 +81,12 @@ class BaseTask:
         """
         return self.status in (TaskStatus.COMPLETED, TaskStatus.SKIPPED, TaskStatus.SOFT_FAILED)
     
+    def is_interrupting(self) -> bool:
+        """
+        Checks if the task is in the process of being interrupted.
+        """
+        return self.status == TaskStatus.INTERRUPTING
+
     def is_interrupted(self) -> bool:
         """
         Checks if the task has been interrupted.

@@ -17,11 +17,6 @@
 ; enabled = false
 ; api_key = xxxxxxxxx
 
-[gpt]
-; enabled = false
-; endpoint = http://localhost:8080/api/chat/completions
-; token = xxxxxxxxx
-
 [transcription]
 ; cpu_model = large-v3-turbo
 ; gpu_model = medium
