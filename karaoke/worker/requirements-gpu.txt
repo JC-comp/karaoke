@@ -1,2 +1,0 @@
-audio-separator[gpu]
-openai-whisper[gpu]

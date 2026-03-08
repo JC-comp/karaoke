@@ -1,0 +1,5 @@
+.status-text {
+    width: 6rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}

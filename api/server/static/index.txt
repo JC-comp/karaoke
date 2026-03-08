@@ -1,0 +1,24 @@
+1:"$Sreact.fragment"
+2:I[8333,["799","static/chunks/799-c6039b0945fa3623.js","963","static/chunks/963-e904bda3be0ef90e.js","177","static/chunks/app/layout-83ecfc269c37f460.js"],"ThemeProvider"]
+3:I[8065,["799","static/chunks/799-c6039b0945fa3623.js","963","static/chunks/963-e904bda3be0ef90e.js","177","static/chunks/app/layout-83ecfc269c37f460.js"],"default"]
+4:"$Sreact.suspense"
+5:I[7555,[],""]
+6:I[1295,[],""]
+7:I[6426,["799","static/chunks/799-c6039b0945fa3623.js","963","static/chunks/963-e904bda3be0ef90e.js","177","static/chunks/app/layout-83ecfc269c37f460.js"],"default"]
+8:I[894,[],"ClientPageRoot"]
+9:I[1183,["266","static/chunks/870fdd6f-abb326143276c072.js","799","static/chunks/799-c6039b0945fa3623.js","500","static/chunks/500-e2cab97bd2474f7f.js","800","static/chunks/800-b676455fabdd1872.js","629","static/chunks/629-a62bb91198d06061.js","853","static/chunks/853-fa4bf5930f26c365.js","974","static/chunks/app/page-7bebb9b00e013064.js"],"default"]
+c:I[9665,[],"OutletBoundary"]
+f:I[9665,[],"ViewportBoundary"]
+11:I[9665,[],"MetadataBoundary"]
+13:I[6614,[],""]
+:HL["/_next/static/css/0b1194f448692e8b.css","style"]
+:HL["/_next/static/css/70e902a91c528fbe.css","style"]
+:HL["/_next/static/css/c575806688e27200.css","style"]
+:HL["/_next/static/css/34260afa8e880c39.css","style"]
+0:{"P":null,"b":"jfoCICRbJMdWSX1X5rvAS","p":"","c":["",""],"i":false,"f":[[["",{"children":["__PAGE__",{}]},"$undefined","$undefined",true],["",["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/0b1194f448692e8b.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","1",{"rel":"stylesheet","href":"/_next/static/css/70e902a91c528fbe.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","link","2",{"rel":"stylesheet","href":"/_next/static/css/c575806688e27200.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"en","data-bs-theme":"dark","children":[["$","body",null,{"children":["$","$L2",null,{"children":["$","$L3",null,{"children":["$","$4",null,{"children":["$","$L5",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L6",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}]}]}]}],["$","$L7",null,{}]]}]]}],{"children":["__PAGE__",["$","$1","c",{"children":[["$","$L8",null,{"Component":"$9","searchParams":{},"params":{},"promises":["$@a","$@b"]}],"$undefined",[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/34260afa8e880c39.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","$Lc",null,{"children":["$Ld","$Le",null]}]]}],{},null,false]},null,false],["$","$1","h",{"children":[null,["$","$1","3JgA3O6loKyeA8Ep2ZNXN",{"children":[["$","$Lf",null,{"children":"$L10"}],null]}],["$","$L11",null,{"children":"$L12"}]]}],false]],"m":"$undefined","G":["$13","$undefined"],"s":false,"S":true}
+a:{}
+b:{}
+10:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+d:null
+e:null
+12:[["$","title","0",{"children":"JTV"}],["$","meta","1",{"name":"description","content":"A karaoke generator that creates karaoke videos from YouTube links or local files."}],["$","link","2",{"rel":"icon","href":"/icon.png?d5a141473d5efb13","type":"image/png","sizes":"128x128"}]]

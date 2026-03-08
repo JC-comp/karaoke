@@ -1,0 +1,6 @@
+minio
+demucs
+stable-ts
+pydantic-settings
+opencc
+torchcodec

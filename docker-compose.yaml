@@ -1,0 +1,389 @@
+services:
+  db:
+    image: mysql:8.1.0
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 30s
+      retries: 5
+      start_period: 5s
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./karaoke/db/:/docker-entrypoint-initdb.d/
+      - mysql_data:/var/lib/mysql
+
+  ktv-minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    restart: always
+    command: server /data --console-address ":9090"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9000/minio/health/ready"]
+      interval: 30s
+      retries: 5
+      start_period: 5s
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_BROWSER_REDIRECT_URL}
+    volumes:
+      - ${MINIO_VOLUME_BASE}:/data
+    networks:
+      - default
+      - web_ktv
+
+  ktv-minio-init:
+    image: quay.io/minio/mc
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    entrypoint: >
+      /bin/sh -c "
+      set -e;
+      /usr/bin/mc alias set myminio http://ktv-minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD";
+      /usr/bin/mc mb --ignore-existing myminio/task-args;
+      /usr/bin/mc mb --ignore-existing myminio/task-storage;
+      "
+    depends_on:
+      ktv-minio:
+        condition: service_healthy
+    
+  rabbitmq:
+    image: rabbitmq:4.2.3-management-alpine
+    restart: always
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      retries: 5
+      start_period: 10s
+  
+  redis:
+    image: redis:alpine3.20
+    restart: always
+    command: /bin/sh -c "redis-server --requirepass $$REDIS_HOST_PASSWORD"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+    environment:
+      REDIS_HOST_PASSWORD: ${REDIS_HOST_PASSWORD}
+
+  x-airflow-common:
+    &airflow-common
+    build: ./karaoke
+    user: "50000:0"
+    environment:
+      &airflow-common-env
+      AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR}
+      AIRFLOW__CORE__AUTH_MANAGER: ${AIRFLOW__CORE__AUTH_MANAGER}
+      AIRFLOW__CELERY__BROKER_URL: ${AIRFLOW__CELERY__BROKER_URL}
+      AIRFLOW__API__BASE_URL: ${AIRFLOW__API__BASE_URL}
+      AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: true
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION}
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: ${AIRFLOW__CORE__EXECUTION_API_SERVER_URL}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+      AIRFLOW__CELERY__RESULT_BACKEND: ${AIRFLOW__CELERY__RESULT_BACKEND}
+      AIRFLOW__API__SECRET_KEY: ${AIRFLOW__API__SECRET_KEY}
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
+      AIRFLOW_CONN_JOB_WEBHOOK_SERVER: ${AIRFLOW_CONN_JOB_WEBHOOK_SERVER}
+    volumes:
+      - ${AIRFLOW_VOLUME_BASE}:/opt/airflow
+      - ./karaoke/dags:/opt/airflow/dags
+    depends_on:
+      &airflow-common-depends-on
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    # yamllint disable rule:line-length
+    command:
+      - -c
+      - |
+        export AIRFLOW_UID=50000
+        one_meg=1048576
+        mem_available=$$(($$(getconf _PHYS_PAGES) * $$(getconf PAGE_SIZE) / one_meg))
+        cpus_available=$$(grep -cE 'cpu[0-9]+' /proc/stat)
+        disk_available=$$(df / | tail -1 | awk '{print $$4}')
+        warning_resources="false"
+        if (( mem_available < 4000 )) ; then
+          echo
+          echo -e "\033[1;33mWARNING!!!: Not enough memory available for Docker.\e[0m"
+          echo "At least 4GB of memory required. You have $$(numfmt --to iec $$((mem_available * one_meg)))"
+          echo
+          warning_resources="true"
+        fi
+        if (( cpus_available < 2 )); then
+          echo
+          echo -e "\033[1;33mWARNING!!!: Not enough CPUS available for Docker.\e[0m"
+          echo "At least 2 CPUs recommended. You have $${cpus_available}"
+          echo
+          warning_resources="true"
+        fi
+        if (( disk_available < one_meg * 10 )); then
+          echo
+          echo -e "\033[1;33mWARNING!!!: Not enough Disk space available for Docker.\e[0m"
+          echo "At least 10 GBs recommended. You have $$(numfmt --to iec $$((disk_available * 1024 )))"
+          echo
+          warning_resources="true"
+        fi
+        if [[ $${warning_resources} == "true" ]]; then
+          echo
+          echo -e "\033[1;33mWARNING!!!: You have not enough resources to run Airflow (see above)!\e[0m"
+          echo "Please follow the instructions to increase amount of resources available:"
+          echo "   https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#before-you-begin"
+          echo
+        fi
+        echo
+        echo "Creating missing opt dirs if missing:"
+        echo
+        mkdir -v -p /opt/airflow/{logs,dags,plugins,config}
+        echo
+        echo "Airflow version:"
+        /entrypoint airflow version
+        echo
+        echo "Files in shared volumes:"
+        echo
+        ls -la /opt/airflow/{logs,dags,plugins,config}
+        echo
+        echo "Running airflow config list to create default config file if missing."
+        echo
+        /entrypoint airflow config list
+        echo
+        echo "Files in shared volumes:"
+        echo
+        ls -la /opt/airflow/{logs,dags,plugins,config}
+        echo
+        echo "Change ownership of files in /opt/airflow to $$AIRFLOW_UID:0"
+        echo
+        chown -R "$$AIRFLOW_UID:0" /opt/airflow/
+        echo
+        echo "Change ownership of files in shared volumes to $$AIRFLOW_UID:0"
+        echo
+        chown -v -R "$$AIRFLOW_UID:0" /opt/airflow/{logs,dags,plugins,config}
+        echo
+        echo "Files in shared volumes:"
+        echo
+        ls -la /opt/airflow/{logs,dags,plugins,config}
+    user: "0:0"
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: ${_AIRFLOW_DB_MIGRATE}
+      _AIRFLOW_WWW_USER_CREATE: ${_AIRFLOW_WWW_USER_CREATE}
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD}
+  
+  ktv-airflow-apiserver:
+    <<: *airflow-common
+    command: api-server
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - default
+      - web_ktv
+    
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    restart: always
+    # healthcheck:
+    #   test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 30s
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+    
+  airflow-base-worker:
+    <<: *airflow-common
+    image: ''
+    build: ./karaoke/workers/base
+    hostname: 6bbd3315b12a
+    command: celery worker -c 2 -q base_tasks_queue
+    # healthcheck:
+    #   test:
+    #     - "CMD-SHELL"
+    #     - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      # Required to handle warm shutdown of the celery workers properly
+      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      DUMB_INIT_SETSID: "0"
+      log_level: ${log_level}
+      storage__endpoint: ${storage__endpoint}
+      storage__access_key: ${storage__access_key}
+      storage__secret_key: ${storage__secret_key}
+      storage__secure: ${storage__secure}
+      provider__acoustid: ${provider__acoustid}
+      provider__acoustid_api_key: ${provider__acoustid_api_key}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    depends_on:
+      <<: *airflow-common-depends-on
+      ktv-airflow-apiserver:
+        condition: service_healthy
+      ktv-minio-init:
+        condition: service_completed_successfully
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-gpu-worker:
+    <<: *airflow-common
+    image: ''
+    build: ./karaoke/workers/gpu
+    hostname: 69f4ef8f6ed1
+    command: celery worker -c 1 -q gpu_tasks_queue
+    # healthcheck:
+    #   test:
+    #     - "CMD-SHELL"
+    #     - 'celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}" || celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      # Required to handle warm shutdown of the celery workers properly
+      # See https://airflow.apache.org/docs/docker-stack/entrypoint.html#signal-propagation
+      DUMB_INIT_SETSID: "0"
+      log_level: ${log_level}
+      storage__endpoint: ${storage__endpoint}
+      storage__access_key: ${storage__access_key}
+      storage__secret_key: ${storage__secret_key}
+      storage__secure: ${storage__secure}
+    restart: always
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [compute,graphics,utility]
+        limits:
+          cpus: '2'
+          memory: 6G
+    volumes:
+      - ${MODELS_VOLUME_BASE}:/data/models
+      - ${AIRFLOW_VOLUME_BASE}:/opt/airflow
+      - ./karaoke/dags:/opt/airflow/dags
+    depends_on:
+      <<: *airflow-common-depends-on
+      ktv-airflow-apiserver:
+        condition: service_healthy
+      ktv-minio-init:
+        condition: service_completed_successfully
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    restart: always
+    # healthcheck:
+    #   test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
+    #   start_period: 30s
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+  
+  ktv-airflow-flower:
+    <<: *airflow-common
+    command: celery flower
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      <<: *airflow-common-env
+      FLOWER_URL_PREFIX: ${FLOWER_URL_PREFIX}
+      FLOWER_BASIC_AUTH: ${FLOWER_BASIC_AUTH}
+    restart: always
+    networks:
+      - default
+      - web_ktv
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  ktv-web:
+    build: ./api
+    restart: always
+    environment:
+      log_level: ${log_level}
+      storage__endpoint: ${storage__endpoint}
+      storage__access_key: ${storage__access_key}
+      storage__secret_key: ${storage__secret_key}
+      storage__secure: ${storage__secure}
+      server__room: ${server__room}
+      server__job: ${server__job}
+      server__web: ${server__web}
+      server__yt: ${server__yt}
+      server__artifact: ${server__artifact}
+      server__socketio_message_queue: ${server__socketio_message_queue}
+      airflow__username: ${airflow__username}
+      airflow__password: ${airflow__password}
+    depends_on:
+      redis:
+        condition: service_healthy
+      ktv-airflow-apiserver:
+        condition: service_healthy
+      ktv-minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "${server__port}:8000"
+    networks:
+      - default
+      - web_ktv
+
+networks:
+  web_ktv:
+    name: 'web_ktv'
+    external: true
+
+volumes:
+  mysql_data:

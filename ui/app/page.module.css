@@ -1,0 +1,5 @@
+.main {
+    display: flex;
+    align-items: flex-start;
+    max-width: 100%;
+}

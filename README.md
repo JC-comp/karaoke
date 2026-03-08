@@ -3,11 +3,11 @@
 This is a scalable, comprehensive karaoke system that allows you to search for any song on YouTube, generate a corresponding karaoke version, and start singing in seconds.
 
 ## Architecture
-The system consists of these components:
-1. [Scheduler](karaoke/scheduler/): This component handles the generation job queue, manages the status of jobs, and distributes them to available workers.
-2. [Worker](karaoke/worker/): Execute karaoke songs generation.
-3. [Frontend web application](frontend/): Search, choose and play karaoke songs.
-4. [Web Server](karaoke/web_server/): Serving frontend app and backend apis
+The system is built with a decoupled microservices approach to handle heavy media processing without lagging the user interface.
+### Core Components
+* **Frontend UI (`ui/`)**: A **Next.js** web application where users can search, select, and play karaoke tracks.
+* **Web Server (`api/`)**: The central hub that serves the frontend and handles backend API requests (user management, song metadata, and job triggering).
+* **Scheduler & Worker (`karaoke/`)**: Powered by **Apache Airflow**. This component manages the generation job queue, tracks job status (Processing/Finished/Failed), and distributes intensive tasks (like AI vocal separation) to available workers.
 
 ## How to use
 1. Search: You use the frontend web application to search for a song on YouTube.
@@ -26,40 +26,37 @@ The system consists of these components:
 
     [<img src="images/4-sing.png" alt="Sing screen" height="256">](images/4-sing.png)
 
-## Installation
-To get JTV up and running, you'll need to set up each of the components. The system is modular, each component can be installed and run independently.
-1. Clone the Repository
-First, clone the JTV repository to your local machine for each components:
-```
-git clone https://github.com/JC-comp/karaoke/
-cd karaoke
-```
-2. Configure the System
-The system uses a config.ini file for global settings. Copy a config.ini from `config.ini.example` at the root of the cloned. If your system is not on the same machine, you will need to set the scheduler host information accordingly.
-3. Install
-Each component requires common installation first.
-```
-pip install -r requirements-base.txt
-```
+## Getting Started
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/JC-comp/karaoke
+    cd karaoke
+    ```
+2.  **Configure Environment Variables**:
+    Copy the example file and fill in your specific keys (API keys, Database credentials, etc.).
+    ```bash
+    cp example.env .env
+    ```
 
-4. Install and run each Component
-After configured common settings for all components, each component has its own installation steps.
-### Scheduler
-Run the the master scheduler.
-```
-python -m karaoke.scheduler.master.main
-```
-### Worker
-```
-pip install -r karaoke/worker/requirements-base.txt
-# Install GPU support dependencies or CPU only
-# pip install -r karaoke/worker/requirements-gpu.txt # GPU support
-pip install -r karaoke/worker/requirements-cpu.txt # CPU only
-/app/venv/bin/python -m karaoke.scheduler.slave
-```
-### Web Server
-Install dependencies and run the webserver.
-```
-pip install -r karaoke/web_server/requirements.txt
-gunicorn -k eventlet -b 0.0.0.0:8000 'karaoke.web_server.main:run_web()'
-```
+3.  **Launch the System**:
+    ```bash
+    docker compose up -d
+    ```
+
+4.  **Access the Application**:
+    Once the Docker containers are healthy, you can reach the interfaces through your web browser:\
+    User Interface: http://localhost:8000 
+
+---
+
+## 🛠 Tech Stack
+
+| Component | Technology |
+| :--- | :--- |
+| **Frontend** | Next.js, Tailwind CSS |
+| **API** | Python / Flask |
+| **Orchestration** | Apache Airflow |
+| **Containerization** | Docker, Docker Compose |
+| **Processing** | FFmpeg, AI Vocal Remover Models |
+
+---

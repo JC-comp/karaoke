@@ -1,0 +1,9 @@
+requests
+Flask
+flask-socketio
+gunicorn
+gevent
+redis
+minio
+pendulum
+pydantic-settings

@@ -1,0 +1,24 @@
+.log-body {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.log-line * {
+    margin-right: 8px;
+}
+
+.log-line:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.log-line span {
+    padding: 1.25px 0;
+    word-break: break-word;
+}
+
+.log-line-number {
+    padding-right: 8px;
+    min-width: 50px;
+    user-select: none;
+    text-align: right;
+}

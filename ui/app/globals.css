@@ -1,0 +1,8 @@
+.root {
+    --container-padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--container-padding);
+    min-height: 100vh;
+}

@@ -1,0 +1,8 @@
+.artifact-table {
+  vertical-align: middle;
+  table-layout: fixed;
+}
+
+.artifact-table td[scope=row] {
+  vertical-align: top;
+}

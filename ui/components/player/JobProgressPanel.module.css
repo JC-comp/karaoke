@@ -1,0 +1,11 @@
+.player-progress-container {
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 1) 33.33%, rgba(0, 0, 0, 1) 66.66%, rgba(0, 0, 0, 0));
+}
+
+.player-progress-holder {
+    transform: translateY(50%);
+}
+
+.player-progress-holder > table {
+    transition: transform 0.3s ease-in-out;
+}

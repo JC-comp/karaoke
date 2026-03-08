@@ -1,0 +1,1 @@
+type TaskStatus = 'none' | 'scheduled' | 'queued' | 'running' | 'success' | 'restarting' | 'failed' | 'skipped' | 'upstream_failed' | 'up_for_retry' | 'up_for_reschedule' | 'deferred' | 'removed';

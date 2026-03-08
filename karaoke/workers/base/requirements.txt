@@ -1,0 +1,10 @@
+yt-dlp[default]
+minio
+pydantic-settings
+pyacoustid
+shazamio
+opencc
+musicxmatch_api
+auditok
+jieba
+pypinyin

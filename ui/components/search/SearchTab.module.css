@@ -1,0 +1,32 @@
+.holder {
+    position: relative;
+    min-height: 60vh;
+}
+
+.queryBox {
+    height: 2.5rem;
+}
+
+.suggestionHolder {
+    background-color: var(--bs-secondary-bg);
+    border-radius: 0.5rem;
+    padding: 0.2rem;
+    width: 100%;
+    position: absolute;
+    top: 2.5rem;
+    max-height: calc(100% - 4.6rem);
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+}
+
+.suggestion {
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.suggestion:hover,
+.suggestion:active {
+    background-color: var(--bs-secondary);
+}

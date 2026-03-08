@@ -1,0 +1,3 @@
+interface TabProps {
+  isActive: boolean;
+}
